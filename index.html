@@ -1,21 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
   <title>WordPress Monitor</title>
-  <meta name="description" content="A lightweight, privacy-first uptime monitoring web app for WordPress sites. Check status every 60 seconds with browser notifications." />
-  <meta property="og:title" content="WordPress Monitor" />
-  <meta property="og:description" content="Lightweight uptime monitoring for WordPress sites. No server required — data stays in your browser." />
-  <meta property="og:type" content="website" />
-  <link rel="icon" type="image/png" href="icon.png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
-  <script src="j-make.js"></script>
-  <script src="monitor.js"></script>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+<h1>WordPress Monitor</h1>
+
+<button id="notifBtn" onclick="enableNotifications()">Enable Notifications</button>
+
+<div id="notifStatus" style="margin: 6px 0; color: var(--text-muted); font-size: 13px;">
+  Notifications: <strong>Unknown</strong>
+</div>
+
+<div id="countdown">Next check in: 60s</div>
+
+<input id="urlInput" type="url" placeholder="https://example.com" style="width:30%">
+<input id="userInput" type="text" placeholder="Username" style="width:18%">
+<input id="passInput" type="password" placeholder="App Password" style="width:18%">
+<button onclick="addSite()">Add</button>
+
+<button onclick="exportSites()">Export</button>
+<button onclick="importSites()">Import</button>
+<input id="importFile" type="file" accept="application/json" style="display:none">
+
+<div id="sites"></div>
+
+<div class="lightbox-overlay" id="lightboxOverlay" onclick="if(event.target===this)closeLightbox()">
+  <div class="lightbox">
+    <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+    <h2 id="lightboxTitle"></h2>
+    <div class="detail-grid" id="lightboxContent"></div>
+  </div>
+</div>
+
+<script src="monitor.js"></script>
 </body>
 </html>
