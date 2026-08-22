@@ -1,20 +1,23 @@
 <section>
   <h4>Features</h4>
-  <p>A lightweight, privacy-first monitoring tool for WordPress sites.</p>
+  <p>WordPress site monitoring with GCM and MetaManager status.</p>
   <ul>
     <li>Real-time status checking every 60 seconds</li>
-    <li>Browser notifications on status changes</    <li>Response time tracking</li>
-    <li>Status history with timestamps</li>
+    <li>Browser notifications on status changes</li>
+    <li>GCM server status (uptime, disk, memory, SSL)</li>
+    <li>MetaManager daemon status (queues, tools)</li>
     <li>JSON export and import</li>
     <li>Data stored in localStorage — no server required</li>
   </ul>
 </section>
 <section>
   <h4>How It Works</h4>
-  <p>The app uses the Fetch API with <code>no-cors</code> mode to check if your sites are reachable. Because it uses no-cors, it can only determine reachability (not HTTP status codes), but this is sufficient for uptime monitoring.</p>
-  <p>All data is stored in your browser's localStorage. Nothing is sent to any server.</p>
+  <p>The app fetches status from your WordPress REST API endpoints using Application Passwords for authentication.</p>
+  <p><strong>GCM:</strong> <code>/wp-json/gcm/v1/status</code></p>
+  <p><strong>MetaManager:</strong> <code>/wp-json/metamanager/v1/status</code></p>
+  <p>All data is stored in your browser's localStorage. Nothing is sent to any external service.</p>
 </section>
 <section>
-  <h4>Privacy</h4>
-  <p>WordPress Monitor runs entirely in your browser. No data is sent to any external service. Site URLs and status history are stored only in localStorage and never leave your device.</p>
+  <h4>Setup</h4>
+  <p>For each WordPress site, create an Application Password in Users > Profile > Application Passwords. Enter the site URL, your username, and the generated password.</p>
 </section>
