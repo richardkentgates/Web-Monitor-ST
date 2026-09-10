@@ -27,7 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function normalize(site) {
     return { url: site.url||"", user: site.user||"", pass: site.pass||"", status: site.status||"Unknown",
              responseTime: site.responseTime||"N/A", lastChecked: site.lastChecked||"Never",
-             gcm: site.gcm||null, mm: site.mm||null };
+             gcm: site.gcm||null, mm: site.mm||null, mxr: site.mxr||null };
   }
   const rawSites = JSON.parse(localStorage.getItem("sites") || "[]");
   const sites = rawSites.map(normalize);
@@ -82,16 +82,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function checkSite(site, index) {
     const start = performance.now();
-    const [gcm, mm] = await Promise.all([
+    const [gcm, mm, mxr] = await Promise.all([
       fetchStatus(site, "gcm/v1/status"),
-      fetchStatus(site, "metamanager/v1/status")
+      fetchStatus(site, "metamanager/v1/status"),
+      fetchStatus(site, "mxroute/v1/status")
     ]);
     const seconds = ((performance.now() - start) / 1000).toFixed(2);
     const gcmOk = gcm && !gcm._error;
     const mmOk = mm && !mm._error;
+    const mxrOk = mxr && !mxr._error;
     let status = "Up";
-    if (!gcmOk && !mmOk) status = "Down";
-    else if (!gcmOk || !mmOk) status = "Partial";
+    if (!gcmOk && !mmOk && !mxrOk) status = "Down";
+    else if (!gcmOk || !mmOk || !mxrOk) status = "Partial";
 
     const prev = sites[index].status;
     if (prev !== "Unknown" && prev !== status && Notification.permission === "granted") {
@@ -102,6 +104,7 @@ document.addEventListener("DOMContentLoaded", () => {
     sites[index].lastChecked = new Date().toLocaleString();
     sites[index].gcm = gcmOk ? gcm : null;
     sites[index].mm = mmOk ? mm : null;
+    sites[index].mxr = mxrOk ? mxr : null;
     save();
   }
 
@@ -171,6 +174,22 @@ document.addEventListener("DOMContentLoaded", () => {
       html += '<div class="detail-section"><h3>MetaManager</h3><p style="color:var(--text-muted);font-size:12px">No data \u2014 endpoint unreachable or unauthorized.</p></div>';
     }
 
+    if (site.mxr) {
+      const x = site.mxr;
+      html += '<div class="detail-section"><h3>MXRoute Mailer</h3><table class="detail-table">';
+      html += "<tr><td>Version</td><td>v" + esc(x.version||"\u2014") + "</td></tr>";
+      html += "<tr><td>Pending</td><td>" + esc(x.pending||0) + "</td></tr>";
+      html += "<tr><td>Sent</td><td>" + esc(x.sent||0) + "</td></tr>";
+      html += "<tr><td>Failed</td><td>" + esc(x.failed||0) + "</td></tr>";
+      if (x.cron) {
+        html += "<tr><td>Cron Last Run</td><td>" + esc(x.cron.last_run||"\u2014") + "</td></tr>";
+        html += "<tr><td>Cron Next</td><td>" + esc(x.cron.next_scheduled||"\u2014") + "</td></tr>";
+      }
+      html += "</table></div>";
+    } else {
+      html += '<div class="detail-section"><h3>MXRoute Mailer</h3><p style="color:var(--text-muted);font-size:12px">No data \u2014 endpoint unreachable or unauthorized.</p></div>';
+    }
+
     document.getElementById("lightboxContent").innerHTML = html;
     document.getElementById("lightboxOverlay").classList.add("open");
   }
@@ -200,6 +219,9 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       if (site.mm && site.mm.updater) {
         summaryHtml += "<tr><td>MetaMgr</td><td>v" + esc(site.mm.updater.installed_version||"\u2014") + "</td></tr>";
+      }
+      if (site.mxr) {
+        summaryHtml += "<tr><td>MXRoute</td><td>v" + esc(site.mxr.version||"\u2014") + "</td></tr>";
       }
 
       div.innerHTML =
