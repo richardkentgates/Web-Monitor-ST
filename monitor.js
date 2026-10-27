@@ -293,11 +293,11 @@ document.addEventListener("DOMContentLoaded", () => {
       if (g.database) services += '<span class="svc ' + (g.database.running ? "ok" : "down") + '">MariaDB</span>';
       if (g.wordpress) services += '<span class="svc ' + (g.wordpress.running ? "ok" : "down") + '">WP</span>';
     }
-    if (site.mm && site.mm.daemons) {
-      Object.entries(site.mm.daemons).forEach(([name, d]) => {
-        services += '<span class="svc ' + (d.running ? "ok" : "down") + '">' + esc(name) + '</span>';
-      });
-    }
+      if (site.mm && !site.mm._error && site.mm.daemons) {
+        Object.entries(site.mm.daemons).forEach(([name, d]) => {
+          services += '<span class="svc ' + (d.running ? "ok" : "down") + '">' + esc(name) + '</span>';
+        });
+      }
 
     const spark = history.length >= 2
       ? '<div class="sparkline-wrap">' + sparkline(history, "#3b82f6") + '</div>'
@@ -443,7 +443,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // MetaManager
-    if (site.mm) {
+    if (site.mm && !site.mm._error && (site.mm.plugin_version || site.mm.daemons)) {
       const m = site.mm;
       let daemonRows = "";
       if (m.daemons) {
@@ -459,11 +459,11 @@ document.addEventListener("DOMContentLoaded", () => {
         (m.tools ? '<tr><td>Tools</td><td>' + (Object.entries(m.tools).filter(([,v]) => !v).length ? "Missing: " + esc(Object.entries(m.tools).filter(([,v]) => !v).map(([k]) => k).join(", ")) : "✓ All available") + '</td></tr>' : '') +
         '</table></div>';
     } else {
-      html += '<div class="detail-card"><h3>MetaManager</h3><p style="color:#64748b;font-size:11px">No data — endpoint unreachable or unauthorized.</p></div>';
+      html += '<div class="detail-card"><h3>MetaManager</h3><p style="color:#64748b;font-size:11px">Not installed or endpoint unavailable on this site.</p></div>';
     }
 
     // MXRoute
-    if (site.mxr) {
+    if (site.mxr && !site.mxr._error && (site.mxr.sent !== undefined || site.mxr.pending !== undefined)) {
       const x = site.mxr;
       const qClass = (x.failed||0) > 0 ? "crit" : (x.pending||0) > 0 ? "warn" : "ok";
       const pendingClass = (x.pending||0) > 0 ? "warn" : "ok";
@@ -479,7 +479,7 @@ document.addEventListener("DOMContentLoaded", () => {
           '</table>' : '') +
         '</div>';
     } else {
-      html += '<div class="detail-card"><h3>MXRoute Mailer</h3><p style="color:#64748b;font-size:11px">No data — endpoint unreachable or unauthorized.</p></div>';
+      html += '<div class="detail-card"><h3>MXRoute Mailer</h3><p style="color:#64748b;font-size:11px">Not installed or endpoint unavailable on this site.</p></div>';
     }
 
     return html;
