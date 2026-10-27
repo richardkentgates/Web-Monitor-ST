@@ -4,7 +4,7 @@
   "private": true,
   "description": "WordPress Status Monitor — fleet status dashboard at st.richardkentgates.com",
   "scripts": {
-    "lint": "node --check monitor.js && node --check j-make.js",
+    "lint": "node --check monitor.js",
     "test": "node --check monitor.js && node --test test/",
     "dev": "python3 -m http.server 8000"
   },
