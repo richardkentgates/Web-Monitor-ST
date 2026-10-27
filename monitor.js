@@ -100,6 +100,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const m = String(str).match(/(\d+)/);
     return m ? parseInt(m[1], 10) : 0;
   }
+  function parseSize(str) {
+    if (!str) return 0;
+    const s = String(str).trim();
+    const m = s.match(/^([\d.]+)\s*([KMGT]?i?B?)$/i);
+    if (!m) return 0;
+    const val = parseFloat(m[1]);
+    const unit = m[2].toUpperCase().replace("I", "");
+    const mult = { "B": 1, "K": 1024, "KB": 1024, "M": 1048576, "MB": 1048576, "G": 1073741824, "GB": 1073741824, "T": 1099511627776, "TB": 1099511627776 }[unit] || 1;
+    return val * mult;
+  }
 
   // ── SVG Sparkline ──
   function sparkline(data, color, width = 280, height = 28) {
@@ -120,7 +130,75 @@ document.addEventListener("DOMContentLoaded", () => {
       '</svg>';
   }
 
-  // ── SVG Gauge ──
+  // ── SVG Bar Chart (for lapses) ──
+  function barChart(data, maxBars = 20, color = "#eab308") {
+    if (!data || !data.length) return '<div style="color:#64748b;font-size:11px;padding:8px">No lapses recorded</div>';
+    const recent = data.slice(-maxBars);
+    const max = Math.max(...recent.map(d => d.lapsed_seconds || 0), 1);
+    const w = 280, h = 48, gap = 2;
+    const bw = Math.max(2, (w - gap * (recent.length - 1)) / recent.length);
+    let bars = "";
+    recent.forEach((d, i) => {
+      const val = d.lapsed_seconds || 0;
+      const bh = Math.max(2, (val / max) * h);
+      const x = i * (bw + gap);
+      const y = h - bh;
+      const c = val > 120 ? "#ef4444" : val > 90 ? "#f97316" : color;
+      bars += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + bh.toFixed(1) + '" fill="' + c + '" rx="1"/>';
+    });
+    return '<svg viewBox="0 0 ' + w + ' ' + h + '" style="width:100%;height:48px">' + bars + '</svg>';
+  }
+
+  // ── Lapse Stats ──
+  function lapseStats(lapses) {
+    if (!lapses || !lapses.length) return "No lapses recorded";
+    const secs = lapses.map(l => l.lapsed_seconds || 0);
+    const avg = (secs.reduce((a, b) => a + b, 0) / secs.length).toFixed(1);
+    const max = Math.max(...secs);
+    const min = Math.min(...secs);
+    return "Count: " + lapses.length + " · Avg: " + avg + "s · Min: " + min + "s · Max: " + max + "s";
+  }
+
+  // ── Lapse Chart ──
+  function lapseChart(lapses) {
+    if (!lapses || !lapses.length) return "";
+    const recent = lapses.slice(-30);
+    const max = Math.max(...recent.map(l => l.lapsed_seconds || 0), 1);
+    const w = 280, h = 48, gap = 2;
+    const bw = Math.max(3, (w - gap * (recent.length - 1)) / recent.length);
+    let bars = "";
+    recent.forEach((l, i) => {
+      const val = l.lapsed_seconds || 0;
+      const bh = Math.max(2, (val / max) * h);
+      const x = i * (bw + gap);
+      const y = h - bh;
+      const c = val > 120 ? "#ef4444" : val > 90 ? "#f97316" : "#3b82f6";
+      bars += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + bh.toFixed(1) + '" fill="' + c + '" rx="1"/>';
+    });
+    return '<svg viewBox="0 0 ' + w + ' ' + h + '" style="width:100%;height:48px">' + bars + '</svg>';
+  }
+
+  // ── Load Average Mini Chart ──
+  function loadChart(loadAvg) {
+    if (!loadAvg) return "";
+    const vals = [loadAvg["1m"], loadAvg["5m"], loadAvg["15m"]].map(Number);
+    const max = Math.max(...vals, 1);
+    const w = 280, h = 32;
+    const bw = w / 3 - 8;
+    const colors = ["#3b82f6", "#22c55e", "#eab308"];
+    const labels = ["1m", "5m", "15m"];
+    let bars = "";
+    vals.forEach((v, i) => {
+      const bh = Math.max(2, (v / max) * h);
+      const x = i * (bw + 12);
+      const y = h - bh;
+      bars += '<rect x="' + x + '" y="' + y + '" width="' + bw + '" height="' + bh + '" fill="' + colors[i] + '" rx="2"/>';
+      bars += '<text x="' + (x + bw / 2) + '" y="' + (h + 10) + '" text-anchor="middle" fill="#64748b" font-size="9">' + labels[i] + ' ' + v + '</text>';
+    });
+    return '<svg viewBox="0 0 ' + w + ' ' + (h + 14) + '" style="width:100%;height:46px">' + bars + '</svg>';
+  }
+
+  // ── Gauge ──
   function gauge(pct, color, size = 64) {
     const r = (size - 10) / 2;
     const c = size / 2;
@@ -242,31 +320,66 @@ document.addEventListener("DOMContentLoaded", () => {
     '</div>';
   }
 
-  // ── Lightbox HTML ──
+  // ── Detail HTML ──
   function detailHtml(site) {
     let html = "";
 
-    // GCM
     if (site.gcm) {
       const g = site.gcm;
 
-      // System gauges
-      if (g.disk || g.memory) {
-        let gauges = "";
-        if (g.disk) {
-          const dpct = pctNum(g.disk.pct);
-          gauges += '<div class="gauge-item">' + gauge(dpct, dpct >= 90 ? "#ef4444" : dpct >= 75 ? "#eab308" : "#22c55e") +
-            '<div class="gauge-label">Disk ' + esc(g.disk.used) + '/' + esc(g.disk.total) + '</div></div>';
-        }
-        if (g.memory && g.memory.pct) {
-          const mpct = pctNum(g.memory.pct);
-          gauges += '<div class="gauge-item">' + gauge(mpct, mpct >= 90 ? "#ef4444" : mpct >= 75 ? "#eab308" : "#22c55e") +
-            '<div class="gauge-label">Mem ' + esc(g.memory.used) + '/' + esc(g.memory.total) + '</div></div>';
-        }
-        html += '<div class="detail-card"><h3>Resources</h3><div class="gauge-row">' + gauges + '</div></div>';
+      // ── Hardware Gauges ──
+      let gauges = "";
+      if (g.disk) {
+        const dpct = pctNum(g.disk.pct);
+        const dc = dpct >= 90 ? "#ef4444" : dpct >= 75 ? "#eab308" : "#22c55e";
+        gauges += '<div class="gauge-item">' + gauge(dpct, dc) +
+          '<div class="gauge-label">Disk ' + esc(g.disk.used) + '/' + esc(g.disk.total) + '</div></div>';
+      }
+      if (g.memory && g.memory.total) {
+        const mTotal = parseSize(g.memory.total);
+        const mUsed = parseSize(g.memory.used);
+        const mpct = mTotal > 0 ? Math.round((mUsed / mTotal) * 100) : 0;
+        const mc = mpct >= 90 ? "#ef4444" : mpct >= 75 ? "#eab308" : "#22c55e";
+        gauges += '<div class="gauge-item">' + gauge(mpct, mc) +
+          '<div class="gauge-label">Mem ' + esc(g.memory.used) + '/' + esc(g.memory.total) + '</div></div>';
+      }
+      if (g.swap && g.swap.total) {
+        const sTotal = parseSize(g.swap.total);
+        const sUsed = parseSize(g.swap.used);
+        const spct = sTotal > 0 ? Math.round((sUsed / sTotal) * 100) : 0;
+        const sc = spct >= 90 ? "#ef4444" : spct >= 75 ? "#eab308" : "#22c55e";
+        gauges += '<div class="gauge-item">' + gauge(spct, sc) +
+          '<div class="gauge-label">Swap ' + esc(g.swap.used) + '/' + esc(g.swap.total) + '</div></div>';
+      }
+      if (gauges) {
+        html += '<div class="detail-card"><h3>Hardware</h3><div class="gauge-row">' + gauges + '</div></div>';
       }
 
-      // Versions
+      // ── Load Average ──
+      if (g.load_avg) {
+        html += '<div class="detail-card"><h3>Load Average</h3>' + loadChart(g.load_avg) + '</div>';
+      }
+
+      // ── Backup ──
+      if (g.backup || g.backup_timer) {
+        html += '<div class="detail-card"><h3>Backup</h3><table class="detail-table">';
+        if (g.backup) {
+          html += '<tr><td>Last Backup</td><td>' + esc(g.backup.date) + '</td></tr>';
+          html += '<tr><td>Size</td><td>' + esc(g.backup.size) + '</td></tr>';
+          html += '<tr><td>Archive</td><td>' + (g.backup.archive_valid ? "✓ Valid" : "✗ Corrupt") + '</td></tr>';
+          html += '<tr><td>SQL Dump</td><td>' + (g.backup.sql_ok ? "✓ OK" : "✗ Failed") + '</td></tr>';
+        }
+        if (g.backup_timer) {
+          html += '<tr><td>Timer</td><td>' + (g.backup_timer.active ? "✓ Active" : "✗ Inactive") + '</td></tr>';
+          if (g.backup_timer.next_run) html += '<tr><td>Next Run</td><td>' + esc(g.backup_timer.next_run) + '</td></tr>';
+        }
+        if (g.scheduled_backup) {
+          html += '<tr><td>Scheduled</td><td>' + esc(g.scheduled_backup.status) + ' — ' + esc(g.scheduled_backup.date) + '</td></tr>';
+        }
+        html += '</table></div>';
+      }
+
+      // ── Versions ──
       html += '<div class="detail-card"><h3>Versions</h3><table class="detail-table">' +
         '<tr><td>GCM</td><td>v' + esc(g.gcm_version) + ' (' + esc(g.gcm_branch) + ')</td></tr>' +
         '<tr><td>WordPress</td><td>v' + esc(g.wp_version) + '</td></tr>' +
@@ -274,40 +387,56 @@ document.addEventListener("DOMContentLoaded", () => {
         (g.wordpress_updates ? '<tr><td>Updates</td><td>core:' + g.wordpress_updates.core + ' plugins:' + g.wordpress_updates.plugins + ' themes:' + g.wordpress_updates.themes + '</td></tr>' : '') +
         '</table></div>';
 
-      // System
+      // ── System ──
       html += '<div class="detail-card"><h3>System</h3><table class="detail-table">' +
         '<tr><td>Uptime</td><td>' + formatUptime(g.uptime_seconds) + '</td></tr>' +
-        (g.load_avg ? '<tr><td>Load</td><td>' + g.load_avg["1m"] + ' / ' + g.load_avg["5m"] + ' / ' + g.load_avg["15m"] + '</td></tr>' : '') +
         (g.disk ? '<tr><td>Disk</td><td>' + esc(g.disk.used) + ' / ' + esc(g.disk.total) + ' (' + esc(g.disk.pct) + ')</td></tr>' : '') +
         (g.memory ? '<tr><td>Memory</td><td>' + esc(g.memory.used) + ' / ' + esc(g.memory.total) + '</td></tr>' : '') +
         (g.swap ? '<tr><td>Swap</td><td>' + esc(g.swap.used) + ' / ' + esc(g.swap.total) + '</td></tr>' : '') +
         '</table></div>';
 
-      // Services
+      // ── Services ──
       html += '<div class="detail-card"><h3>Services</h3><table class="detail-table">' +
-        '<tr><td>Apache</td><td>' + (g.apache && g.apache.running ? "✓ Running" : "✗ Down") + '</td></tr>' +
-        '<tr><td>Database</td><td>' + (g.database && g.database.running ? "✓ " + esc(g.database.type || "MariaDB") : "✗ Down") + '</td></tr>' +
+        '<tr><td>Apache</td><td>' + (g.apache && g.apache.running ? "✓ Running v" + esc(g.apache.version || "") : "✗ Down") + '</td></tr>' +
+        '<tr><td>Database</td><td>' + (g.database && g.database.running ? "✓ " + esc(g.database.type || "MariaDB") + " v" + esc(g.database.version || "") : "✗ Down") + '</td></tr>' +
         '<tr><td>WordPress</td><td>' + (g.wordpress && g.wordpress.running ? "✓ Running" : "✗ Down") + '</td></tr>' +
         (g.ssl ? '<tr><td>SSL</td><td>' + g.ssl.cert_days_left + ' days left</td></tr>' : '') +
         '</table></div>';
 
-      // Timers
-      if (g.backup_timer || g.pending_timer || g.wp_cron) {
+      // ── Timers ──
+      if (g.backup_timer || g.pending_timer || g.wp_cron || g.upgrade_timer) {
         html += '<div class="detail-card"><h3>Timers</h3><table class="detail-table">' +
           (g.backup_timer ? '<tr><td>Backup</td><td>' + (g.backup_timer.active ? "✓" : "✗") + (g.backup_timer.next_run ? ' ' + esc(g.backup_timer.next_run) : '') + '</td></tr>' : '') +
+          (g.upgrade_timer ? '<tr><td>Upgrade</td><td>' + (g.upgrade_timer.active ? "✓" : "✗") + (g.upgrade_timer.next_run ? ' ' + esc(g.upgrade_timer.next_run) : '') + '</td></tr>' : '') +
           (g.pending_timer ? '<tr><td>Deferred</td><td>' + (g.pending_timer.active ? "✓" : "✗") + (g.pending_timer.next_check ? ' ' + esc(g.pending_timer.next_check) : '') + '</td></tr>' : '') +
           (g.wp_cron ? '<tr><td>WP Cron</td><td>' + (g.wp_cron.active ? "✓" : "✗") + (g.wp_cron.next_run ? ' ' + esc(g.wp_cron.next_run) : '') + '</td></tr>' : '') +
           '</table></div>';
       }
 
-      // Security
-      if (g.ufw || g.fail2ban || g.modsecurity) {
+      // ── Security ──
+      if (g.ufw || g.fail2ban || g.modsecurity || g.maldet || g.site_integrity) {
         html += '<div class="detail-card"><h3>Security</h3><table class="detail-table">' +
           (g.ufw ? '<tr><td>UFW</td><td>' + (g.ufw.active ? "✓ Active" : "✗ Inactive") + ' (' + g.ufw.rules + ' rules)</td></tr>' : '') +
           (g.fail2ban ? '<tr><td>fail2ban</td><td>' + esc(Object.entries(g.fail2ban).map(([k,v]) => k + ":" + v).join(" ")) + '</td></tr>' : '') +
-          (g.modsecurity ? '<tr><td>ModSec</td><td>' + (g.modsecurity.installed ? "✓ " + esc(g.modsecurity.engine) : "✗ Not installed") + '</td></tr>' : '') +
+          (g.modsecurity ? '<tr><td>ModSec</td><td>' + (g.modsecurity.installed ? "✓ " + esc(g.modsecurity.engine) + " (" + g.modsecurity.rules + " rules, " + (g.modsecurity.recent_blocks||0) + " blocks)" : "✗ Not installed") + '</td></tr>' : '') +
+          (g.maldet ? '<tr><td>Malware</td><td>' + (g.maldet.installed ? "✓ Installed" + (g.maldet.daily_scan ? " (daily)" : "") : "✗ Not installed") + '</td></tr>' : '') +
+          (g.site_integrity ? '<tr><td>Integrity</td><td>' +
+            (g.site_integrity.index_php ? "✓" : "✗") + ' index.php ' +
+            (g.site_integrity.htaccess ? "✓" : "✗") + ' .htaccess ' +
+            (g.site_integrity.homepage_code === 200 ? "✓" : "✗") + ' HTTP ' + g.site_integrity.homepage_code +
+            '</td></tr>' : '') +
+          (g.security_scan ? '<tr><td>Scan</td><td>' + (g.security_scan.ok ? "✓ Clean" : "⚠ Findings") + ' (' + (g.security_scan.findings||0) + ' findings)</td></tr>' : '') +
           '</table></div>';
       }
+
+      // ── Status Lapses ──
+      if (g.status_lapses && g.status_lapses.length > 0) {
+        html += '<div class="detail-card"><h3>Status Lapses</h3>' +
+          '<div style="margin-bottom:4px">' + barChart(g.status_lapses) + '</div>' +
+          '<div style="font-size:10px;color:#64748b">' + lapseStats(g.status_lapses) + '</div>' +
+          '</div>';
+      }
+
     } else {
       html += '<div class="detail-card"><h3>GCM</h3><p style="color:#64748b;font-size:11px">No data — endpoint unreachable or unauthorized.</p></div>';
     }
