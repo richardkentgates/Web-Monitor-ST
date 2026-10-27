@@ -183,19 +183,20 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!loadAvg) return "";
     const vals = [loadAvg["1m"], loadAvg["5m"], loadAvg["15m"]].map(Number);
     const max = Math.max(...vals, 1);
-    const w = 280, h = 32;
-    const bw = w / 3 - 8;
+    const w = 280, h = 40, labelH = 18;
+    const bw = w / 3 - 12;
     const colors = ["#3b82f6", "#22c55e", "#eab308"];
-    const labels = ["1m", "5m", "15m"];
+    const labels = ["CPU 1m", "CPU 5m", "CPU 15m"];
     let bars = "";
     vals.forEach((v, i) => {
       const bh = Math.max(2, (v / max) * h);
       const x = i * (bw + 12);
       const y = h - bh;
       bars += '<rect x="' + x + '" y="' + y + '" width="' + bw + '" height="' + bh + '" fill="' + colors[i] + '" rx="2"/>';
-      bars += '<text x="' + (x + bw / 2) + '" y="' + (h + 10) + '" text-anchor="middle" fill="#64748b" font-size="9">' + labels[i] + ' ' + v + '</text>';
+      bars += '<text x="' + (x + bw / 2) + '" y="' + (y - 4) + '" text-anchor="middle" fill="#f1f5f9" font-size="11" font-weight="600">' + v + '</text>';
+      bars += '<text x="' + (x + bw / 2) + '" y="' + (h + labelH - 2) + '" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="500">' + labels[i] + '</text>';
     });
-    return '<svg viewBox="0 0 ' + w + ' ' + (h + 14) + '" style="width:100%;height:46px">' + bars + '</svg>';
+    return '<svg viewBox="0 0 ' + w + ' ' + (h + labelH) + '" style="width:100%;height:' + (h + labelH) + 'px">' + bars + '</svg>';
   }
 
   // ── Gauge ──
@@ -357,7 +358,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // ── Load Average ──
       if (g.load_avg) {
-        html += '<div class="detail-card"><h3>Load Average</h3>' + loadChart(g.load_avg) + '</div>';
+        html += '<div class="detail-card"><h3>CPU Load Average</h3>' + loadChart(g.load_avg) + '</div>';
       }
 
       // ── Backup ──
