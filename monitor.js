@@ -33,6 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
       status: site.status || "Unknown", responseTime: site.responseTime || "N/A",
       httpCode: site.httpCode || "—",
       lastChecked: site.lastChecked || "Never",
+      incidents: site.incidents || [],
       gcm: site.gcm || null, mm: site.mm || null, mxr: site.mxr || null
     };
   }
@@ -253,6 +254,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const prev = sites[index].status;
     if (prev !== "Unknown" && prev !== status && Notification.permission === "granted") {
       new Notification(site.url, { body: "Status: " + prev + " → " + status });
+    }
+
+    // Track downtime incidents
+    if (status === "Down" && prev !== "Down") {
+      sites[index].incidents.push({ start: Date.now(), end: null, httpCode: gcmOk ? (gcm._httpCode || 200) : (gcm._code || "—") });
+    } else if (status !== "Down" && prev === "Down") {
+      const inc = sites[index].incidents[sites[index].incidents.length - 1];
+      if (inc && !inc.end) inc.end = Date.now();
     }
 
     sites[index].status = status;
@@ -505,37 +514,45 @@ document.addEventListener("DOMContentLoaded", () => {
   window._openHistory = function(i) {
     const site = sites[i];
     document.getElementById("lightboxTitle").textContent = site.url + " — Downtime History";
-    const lapses = (site.gcm && site.gcm.status_lapses) || [];
+    const incidents = site.incidents || [];
     let html = "";
 
-    if (lapses.length > 0) {
-      const total = lapses.reduce((s, l) => s + (l.lapsed_seconds || 0), 0);
-      const avg = (total / lapses.length).toFixed(1);
-      const max = Math.max(...lapses.map(l => l.lapsed_seconds || 0));
-      const min = Math.min(...lapses.map(l => l.lapsed_seconds || 0));
+    if (incidents.length > 0) {
+      const completed = incidents.filter(inc => inc.end);
+      const ongoing = incidents.filter(inc => !inc.end);
+      const totalMs = completed.reduce((s, inc) => s + (inc.end - inc.start), 0);
+      const avgMin = completed.length ? (totalMs / completed.length / 60000).toFixed(1) : "0";
+      const maxMin = completed.length ? Math.max(...completed.map(inc => (inc.end - inc.start) / 60000)).toFixed(1) : "0";
 
-      html += '<div class="detail-card"><h3>Summary</h3><div class="queue-stats">' +
-        '<div class="queue-stat ok"><div class="num">' + lapses.length + '</div><div class="lbl">Lapses</div></div>' +
-        '<div class="queue-stat ' + (total > 3600 ? "warn" : "ok") + '"><div class="num">' + Math.round(total / 60) + 'm</div><div class="lbl">Total Downtime</div></div>' +
-        '<div class="queue-stat ok"><div class="num">' + avg + 's</div><div class="lbl">Avg</div></div>' +
-        '<div class="queue-stat ' + (max > 120 ? "crit" : max > 60 ? "warn" : "ok") + '"><div class="num">' + max + 's</div><div class="lbl">Max</div></div>' +
-        '<div class="queue-stat ok"><div class="num">' + min + 's</div><div class="lbl">Min</div></div>' +
+      html += '<div class="detail-card"><h3>Incident Summary</h3><div class="queue-stats">' +
+        '<div class="queue-stat ' + (incidents.length > 0 ? "warn" : "ok") + '"><div class="num">' + incidents.length + '</div><div class="lbl">Incidents</div></div>' +
+        (ongoing.length ? '<div class="queue-stat crit"><div class="num">' + ongoing.length + '</div><div class="lbl">Ongoing</div></div>' : '') +
+        '<div class="queue-stat ok"><div class="num">' + Math.round(totalMs / 60000) + 'm</div><div class="lbl">Total Down</div></div>' +
+        '<div class="queue-stat ok"><div class="num">' + avgMin + 'm</div><div class="lbl">Avg</div></div>' +
+        '<div class="queue-stat ' + (parseFloat(maxMin) > 10 ? "crit" : parseFloat(maxMin) > 5 ? "warn" : "ok") + '"><div class="num">' + maxMin + 'm</div><div class="lbl">Longest</div></div>' +
         '</div></div>';
 
-      html += '<div class="detail-card" style="grid-column:1/-1"><h3>Lapse Timeline</h3>' +
-        '<div style="margin-bottom:8px">' + barChart(lapses, 30, "#3b82f6") + '</div>';
+      html += '<div class="detail-card" style="grid-column:1/-1"><h3>Incidents</h3>' +
+        '<table class="detail-table">' +
+        '<tr><th style="text-align:left;color:#64748b;font-size:10px;padding:4px 0">Time Down</th><th style="text-align:left;color:#64748b;font-size:10px;padding:4px 0">Time Up</th><th style="text-align:right;color:#64748b;font-size:10px;padding:4px 0">Duration</th><th style="text-align:right;color:#64748b;font-size:10px;padding:4px 0">HTTP</th><th style="text-align:right;color:#64748b;font-size:10px;padding:4px 0">Status</th></tr>';
 
-      html += '<table class="detail-table"><tr><th style="text-align:left;color:#64748b;font-size:10px;padding:4px 0">Time</th><th style="text-align:right;color:#64748b;font-size:10px;padding:4px 0">Duration</th><th style="text-align:right;color:#64748b;font-size:10px;padding:4px 0">Severity</th></tr>';
-      lapses.slice(-30).reverse().forEach(l => {
-        const sec = l.lapsed_seconds || 0;
-        const sev = sec > 120 ? "crit" : sec > 90 ? "warn" : "ok";
-        const sevLabel = sec > 120 ? "High" : sec > 90 ? "Medium" : "Low";
-        const time = new Date((l.ts || 0) * 1000).toLocaleString();
-        html += '<tr><td>' + esc(time) + '</td><td style="text-align:right">' + sec + 's</td><td style="text-align:right;color:var(--' + sev + ',#f1f5f9)">' + sevLabel + '</td></tr>';
+      incidents.slice(-20).reverse().forEach(inc => {
+        const startStr = new Date(inc.start).toLocaleString();
+        const endStr = inc.end ? new Date(inc.end).toLocaleString() : "—";
+        const durMin = inc.end ? ((inc.end - inc.start) / 60000).toFixed(1) + "m" : "ongoing";
+        const sev = !inc.end ? "crit" : (inc.end - inc.start) > 600000 ? "crit" : (inc.end - inc.start) > 300000 ? "warn" : "ok";
+        const statusLabel = !inc.end ? "Down" : "Resolved";
+        html += '<tr>' +
+          '<td>' + esc(startStr) + '</td>' +
+          '<td>' + esc(endStr) + '</td>' +
+          '<td style="text-align:right">' + durMin + '</td>' +
+          '<td style="text-align:right">' + esc(inc.httpCode) + '</td>' +
+          '<td style="text-align:right;color:var(--' + sev + ',#f1f5f9)">' + statusLabel + '</td>' +
+          '</tr>';
       });
       html += '</table></div>';
     } else {
-      html += '<div class="detail-card"><h3>Downtime History</h3><p style="color:#64748b;font-size:11px">No downtime recorded. The monitor has not detected any status lapses for this site.</p></div>';
+      html += '<div class="detail-card"><h3>Downtime History</h3><p style="color:#64748b;font-size:11px">No downtime incidents recorded. The monitor has not detected any outages for this site.</p></div>';
     }
 
     document.getElementById("lightboxContent").innerHTML = html;
