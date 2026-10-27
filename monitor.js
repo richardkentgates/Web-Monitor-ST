@@ -225,9 +225,10 @@ document.addEventListener("DOMContentLoaded", () => {
         headers: { "Authorization": "Basic " + cred },
         cache: "no-store"
       });
-      if (!res.ok) return { _error: true, _code: res.status };
+      const httpCode = res.status;
+      if (!res.ok) return { _error: true, _code: httpCode, _httpCode: httpCode };
       const data = await res.json();
-      data._httpCode = res.status;
+      data._httpCode = httpCode;
       return data;
     } catch {
       return { _error: true, _code: "\u2014" };
@@ -266,7 +267,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     sites[index].status = status;
     sites[index].responseTime = seconds + "s";
-    sites[index].httpCode = gcmOk ? (gcm._httpCode || 200) : (gcm._code || "—");
+    sites[index].httpCode = (gcm._httpCode) || (gcm._code !== "—" ? gcm._code : "—") || "—";
     sites[index].lastChecked = new Date().toLocaleTimeString();
     sites[index].gcm = gcmOk ? gcm : null;
     sites[index].mm = mmOk ? mm : null;
