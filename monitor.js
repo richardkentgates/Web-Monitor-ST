@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const POLL_INTERVAL = 120;
+  const POLL_INTERVAL = 60;
   let countdown = POLL_INTERVAL;
   const responseHistory = {};
 
