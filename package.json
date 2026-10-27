@@ -1,0 +1,14 @@
+{
+  "name": "web-monitor-st",
+  "version": "1.0.0",
+  "private": true,
+  "description": "WordPress Status Monitor — fleet status dashboard at st.richardkentgates.com",
+  "scripts": {
+    "lint": "node --check monitor.js && node --check j-make.js",
+    "test": "node --check monitor.js && node --test test/",
+    "dev": "python3 -m http.server 8000"
+  },
+  "devDependencies": {
+    "jsdom": "^28.0.0"
+  }
+}

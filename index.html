@@ -1,38 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>WordPress Monitor</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WordPress Monitor</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
+<header class="topbar">
+  <div class="topbar-left">
+    <h1>WordPress Monitor</h1>
+    <span class="notif-status" id="notifStatus">Notifications: <strong>Checking…</strong></span>
+  </div>
+  <div class="topbar-right">
+    <button id="notifBtn" class="btn btn-ghost btn-sm" onclick="enableNotifications()">Enable Notifications</button>
+    <span class="countdown" id="countdown">60s</span>
+    <button class="btn btn-ghost btn-sm" onclick="exportSites()">Export</button>
+    <button class="btn btn-ghost btn-sm" onclick="importSites()">Import</button>
+    <input id="importFile" type="file" accept="application/json" hidden>
+  </div>
+</header>
 
-<h1>WordPress Monitor</h1>
+<section class="add-bar">
+  <input id="urlInput" type="url" placeholder="https://example.com" class="input input-url">
+  <input id="userInput" type="text" placeholder="Username" class="input input-user">
+  <input id="passInput" type="password" placeholder="App Password" class="input input-pass">
+  <button class="btn btn-primary" onclick="addSite()">Add Site</button>
+</section>
 
-<button id="notifBtn" onclick="enableNotifications()">Enable Notifications</button>
-
-<div id="notifStatus" style="margin: 6px 0; color: var(--text-muted); font-size: 13px;">
-  Notifications: <strong>Unknown</strong>
-</div>
-
-<div id="countdown">Next check in: 60s</div>
-
-<input id="urlInput" type="url" placeholder="https://example.com" style="width:30%">
-<input id="userInput" type="text" placeholder="Username" style="width:18%">
-<input id="passInput" type="password" placeholder="App Password" style="width:18%">
-<button onclick="addSite()">Add</button>
-
-<button onclick="exportSites()">Export</button>
-<button onclick="importSites()">Import</button>
-<input id="importFile" type="file" accept="application/json" style="display:none">
-
-<div id="sites"></div>
+<main id="sites" class="site-grid"></main>
 
 <div class="lightbox-overlay" id="lightboxOverlay" onclick="if(event.target===this)closeLightbox()">
   <div class="lightbox">
-    <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
-    <h2 id="lightboxTitle"></h2>
-    <div class="detail-grid" id="lightboxContent"></div>
+    <div class="lightbox-header">
+      <h2 id="lightboxTitle"></h2>
+      <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+    </div>
+    <div class="lightbox-body" id="lightboxContent"></div>
   </div>
 </div>
 
