@@ -229,6 +229,22 @@ body {
   align-items: center;
   gap: 6px;
 }
+.card-stats {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.stat-pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+.stat-code-ok { background: var(--green-bg); color: var(--green); }
+.stat-code-err { background: var(--red-bg); color: var(--red); }
+.stat-code-unknown { background: var(--accent-dim); color: var(--text3); }
+.stat-time { background: var(--surface2); color: var(--text2); }
 .card-meta {
   font-size: 10px;
   color: var(--text3);

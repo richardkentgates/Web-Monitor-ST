@@ -31,6 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return {
       url: site.url || "", user: site.user || "", pass: site.pass || "",
       status: site.status || "Unknown", responseTime: site.responseTime || "N/A",
+      httpCode: site.httpCode || "—",
       lastChecked: site.lastChecked || "Never",
       gcm: site.gcm || null, mm: site.mm || null, mxr: site.mxr || null
     };
@@ -224,7 +225,9 @@ document.addEventListener("DOMContentLoaded", () => {
         cache: "no-store"
       });
       if (!res.ok) return { _error: true, _code: res.status };
-      return await res.json();
+      const data = await res.json();
+      data._httpCode = res.status;
+      return data;
     } catch {
       return { _error: true, _code: "\u2014" };
     }
@@ -254,6 +257,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     sites[index].status = status;
     sites[index].responseTime = seconds + "s";
+    sites[index].httpCode = gcmOk ? (gcm._httpCode || 200) : (gcm._code || "—");
     sites[index].lastChecked = new Date().toLocaleTimeString();
     sites[index].gcm = gcmOk ? gcm : null;
     sites[index].mm = mmOk ? mm : null;
@@ -312,9 +316,13 @@ document.addEventListener("DOMContentLoaded", () => {
       metrics +
       '<div class="service-row">' + services + '</div>' +
       '<div class="card-bottom">' +
-        '<span class="card-meta">' + esc(site.lastChecked) + ' · ' + esc(site.responseTime) + '</span>' +
+        '<div class="card-stats">' +
+          '<span class="stat-pill stat-code-' + (site.httpCode == 200 ? "ok" : site.httpCode == "—" ? "unknown" : "err") + '">HTTP ' + esc(site.httpCode) + '</span>' +
+          '<span class="stat-pill stat-time">⏱ ' + esc(site.responseTime) + '</span>' +
+        '</div>' +
         '<div class="card-actions">' +
           '<button class="btn btn-ghost btn-sm" onclick="window._openLightbox(' + i + ')">Details</button>' +
+          '<button class="btn btn-ghost btn-sm" onclick="window._openHistory(' + i + ')">History</button>' +
           '<button class="btn btn-ghost btn-sm" onclick="window._removeSite(' + i + ')">Remove</button>' +
         '</div>' +
       '</div>' +
@@ -490,6 +498,47 @@ document.addEventListener("DOMContentLoaded", () => {
     const site = sites[i];
     document.getElementById("lightboxTitle").textContent = site.url;
     document.getElementById("lightboxContent").innerHTML = detailHtml(site);
+    document.getElementById("lightboxOverlay").classList.add("open");
+  };
+
+  // ── Downtime History Lightbox ──
+  window._openHistory = function(i) {
+    const site = sites[i];
+    document.getElementById("lightboxTitle").textContent = site.url + " — Downtime History";
+    const lapses = (site.gcm && site.gcm.status_lapses) || [];
+    let html = "";
+
+    if (lapses.length > 0) {
+      const total = lapses.reduce((s, l) => s + (l.lapsed_seconds || 0), 0);
+      const avg = (total / lapses.length).toFixed(1);
+      const max = Math.max(...lapses.map(l => l.lapsed_seconds || 0));
+      const min = Math.min(...lapses.map(l => l.lapsed_seconds || 0));
+
+      html += '<div class="detail-card"><h3>Summary</h3><div class="queue-stats">' +
+        '<div class="queue-stat ok"><div class="num">' + lapses.length + '</div><div class="lbl">Lapses</div></div>' +
+        '<div class="queue-stat ' + (total > 3600 ? "warn" : "ok") + '"><div class="num">' + Math.round(total / 60) + 'm</div><div class="lbl">Total Downtime</div></div>' +
+        '<div class="queue-stat ok"><div class="num">' + avg + 's</div><div class="lbl">Avg</div></div>' +
+        '<div class="queue-stat ' + (max > 120 ? "crit" : max > 60 ? "warn" : "ok") + '"><div class="num">' + max + 's</div><div class="lbl">Max</div></div>' +
+        '<div class="queue-stat ok"><div class="num">' + min + 's</div><div class="lbl">Min</div></div>' +
+        '</div></div>';
+
+      html += '<div class="detail-card" style="grid-column:1/-1"><h3>Lapse Timeline</h3>' +
+        '<div style="margin-bottom:8px">' + barChart(lapses, 30, "#3b82f6") + '</div>';
+
+      html += '<table class="detail-table"><tr><th style="text-align:left;color:#64748b;font-size:10px;padding:4px 0">Time</th><th style="text-align:right;color:#64748b;font-size:10px;padding:4px 0">Duration</th><th style="text-align:right;color:#64748b;font-size:10px;padding:4px 0">Severity</th></tr>';
+      lapses.slice(-30).reverse().forEach(l => {
+        const sec = l.lapsed_seconds || 0;
+        const sev = sec > 120 ? "crit" : sec > 90 ? "warn" : "ok";
+        const sevLabel = sec > 120 ? "High" : sec > 90 ? "Medium" : "Low";
+        const time = new Date((l.ts || 0) * 1000).toLocaleString();
+        html += '<tr><td>' + esc(time) + '</td><td style="text-align:right">' + sec + 's</td><td style="text-align:right;color:var(--' + sev + ',#f1f5f9)">' + sevLabel + '</td></tr>';
+      });
+      html += '</table></div>';
+    } else {
+      html += '<div class="detail-card"><h3>Downtime History</h3><p style="color:#64748b;font-size:11px">No downtime recorded. The monitor has not detected any status lapses for this site.</p></div>';
+    }
+
+    document.getElementById("lightboxContent").innerHTML = html;
     document.getElementById("lightboxOverlay").classList.add("open");
   };
   window.closeLightbox = function() {
