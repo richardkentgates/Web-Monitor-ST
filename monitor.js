@@ -550,7 +550,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let html = "";
 
     // ── Server-Detected Incidents (GCM HTTP response monitoring) ──
-    html += '<div class="detail-card" style="grid-column:1/-1"><h3>Server-Detected Incidents</h3>';
+    html += '<div class="detail-card" style="grid-column:1/2"><h3>Server-Detected Incidents</h3>';
     if (serverIncidents.length > 0) {
       const downCount = serverIncidents.filter(inc => inc.event === "down").length;
       const recCount = serverIncidents.filter(inc => inc.event === "recovered").length;
@@ -575,7 +575,7 @@ document.addEventListener("DOMContentLoaded", () => {
     html += '</div>';
 
     // ── Browser-Detected Incidents (Web Monitor polling) ──
-    html += '<div class="detail-card" style="grid-column:1/-1"><h3>Browser-Detected Incidents</h3>';
+    html += '<div class="detail-card" style="grid-column:2/3"><h3>Browser-Detected Incidents</h3>';
     if (incidents.length > 0) {
       const completed = incidents.filter(inc => inc.end);
       const ongoing = incidents.filter(inc => !inc.end);
@@ -614,7 +614,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     html += '</div>';
 
-    document.getElementById("lightboxContent").innerHTML = html;
+    document.getElementById("lightboxContent").innerHTML = '<div style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px">' + html + '</div>';
     document.getElementById("lightboxOverlay").classList.add("open");
   };
   window.closeLightbox = function() {
