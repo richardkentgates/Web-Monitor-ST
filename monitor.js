@@ -31,6 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return {
       url: site.url || "", user: site.user || "", pass: site.pass || "",
       status: site.status || "Unknown", responseTime: site.responseTime || "N/A",
+      apiResponse: site.apiResponse || "—",
       httpCode: site.httpCode || "—",
       lastChecked: site.lastChecked || "Never",
       incidents: site.incidents || [],
@@ -236,6 +237,14 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ── Check Site ──
+  async function measureLatency(site) {
+    const start = performance.now();
+    try {
+      await fetch(site.url, { method: "HEAD", cache: "no-store" });
+    } catch {}
+    return ((performance.now() - start) / 1000).toFixed(2);
+  }
+
   async function checkSite(site, index) {
     const start = performance.now();
     const [gcm, mm, mxr] = await Promise.all([
@@ -244,6 +253,7 @@ document.addEventListener("DOMContentLoaded", () => {
       fetchStatus(site, "mxroute/v1/status")
     ]);
     const seconds = ((performance.now() - start) / 1000).toFixed(2);
+    const latency = await measureLatency(site);
     const gcmOk = gcm && !gcm._error;
     const mmOk = mm && !mm._error;
     const mxrOk = mxr && !mxr._error;
@@ -266,7 +276,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     sites[index].status = status;
-    sites[index].responseTime = seconds + "s";
+    sites[index].responseTime = latency + "s";
+    sites[index].apiResponse = seconds + "s";
     sites[index].httpCode = (gcm._httpCode) || (gcm._code !== "—" ? gcm._code : "—") || "—";
     sites[index].lastChecked = new Date().toLocaleTimeString();
     sites[index].gcm = gcmOk ? gcm : null;
@@ -274,7 +285,7 @@ document.addEventListener("DOMContentLoaded", () => {
     sites[index].mxr = mxrOk ? mxr : null;
 
     if (!responseHistory[site.url]) responseHistory[site.url] = [];
-    responseHistory[site.url].push(parseFloat(seconds));
+    responseHistory[site.url].push(parseFloat(latency));
     if (responseHistory[site.url].length > 30) responseHistory[site.url].shift();
 
     save();
@@ -409,6 +420,8 @@ document.addEventListener("DOMContentLoaded", () => {
       // ── System ──
       html += '<div class="detail-card"><h3>System</h3><table class="detail-table">' +
         '<tr><td>Uptime</td><td>' + formatUptime(g.uptime_seconds) + '</td></tr>' +
+        '<tr><td>HTTP Latency</td><td>' + esc(site.responseTime) + '</td></tr>' +
+        '<tr><td>API Response</td><td>' + esc(site.apiResponse || "—") + ' (3 endpoints)</td></tr>' +
         (g.disk ? '<tr><td>Disk</td><td>' + esc(g.disk.used) + ' / ' + esc(g.disk.total) + ' (' + esc(g.disk.pct) + ')</td></tr>' : '') +
         (g.memory ? '<tr><td>Memory</td><td>' + esc(g.memory.used) + ' / ' + esc(g.memory.total) + '</td></tr>' : '') +
         (g.swap ? '<tr><td>Swap</td><td>' + esc(g.swap.used) + ' / ' + esc(g.swap.total) + '</td></tr>' : '') +
