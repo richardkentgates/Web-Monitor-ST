@@ -546,8 +546,36 @@ document.addEventListener("DOMContentLoaded", () => {
     const site = sites[i];
     document.getElementById("lightboxTitle").textContent = site.url + " — Downtime History";
     const incidents = site.incidents || [];
+    const serverIncidents = (site.gcm && site.gcm.http_incidents) || [];
     let html = "";
 
+    // ── Server-Detected Incidents (GCM HTTP response monitoring) ──
+    html += '<div class="detail-card"><h3>Server-Detected Incidents</h3>';
+    if (serverIncidents.length > 0) {
+      const downCount = serverIncidents.filter(inc => inc.event === "down").length;
+      const recCount = serverIncidents.filter(inc => inc.event === "recovered").length;
+      html += '<div class="queue-stats">' +
+        '<div class="queue-stat ' + (downCount > 0 ? "crit" : "ok") + '"><div class="num">' + downCount + '</div><div class="lbl">Downtime</div></div>' +
+        '<div class="queue-stat ok"><div class="num">' + recCount + '</div><div class="lbl">Recoveries</div></div>' +
+        '<div class="queue-stat ok"><div class="num">' + serverIncidents.length + '</div><div class="lbl">Total Events</div></div>' +
+        '</div>';
+      html += '<table class="detail-table" style="margin-top:8px">' +
+        '<tr><th style="text-align:left;color:#64748b;font-size:10px;padding:4px 0">Time</th><th style="text-align:right;color:#64748b;font-size:10px;padding:4px 0">Event</th><th style="text-align:right;color:#64748b;font-size:10px;padding:4px 0">Response</th></tr>';
+      serverIncidents.slice(-20).reverse().forEach(inc => {
+        const t = new Date((inc.ts || 0) * 1000).toLocaleString();
+        const ev = inc.event === "down" ? "Down" : "Recovered";
+        const evColor = inc.event === "down" ? "var(--red, #ef4444)" : "var(--green, #22c55e)";
+        const resp = inc.prev_code + " → " + inc.new_code;
+        html += '<tr><td>' + esc(t) + '</td><td style="text-align:right;color:' + evColor + '">' + ev + '</td><td style="text-align:right">' + esc(resp) + '</td></tr>';
+      });
+      html += '</table>';
+    } else {
+      html += '<p style="color:#64748b;font-size:11px">No server-detected incidents. GCM monitors homepage HTTP response and logs changes here.</p>';
+    }
+    html += '</div>';
+
+    // ── Browser-Detected Incidents (Web Monitor polling) ──
+    html += '<div class="detail-card"><h3>Browser-Detected Incidents</h3>';
     if (incidents.length > 0) {
       const completed = incidents.filter(inc => inc.end);
       const ongoing = incidents.filter(inc => !inc.end);
@@ -555,16 +583,15 @@ document.addEventListener("DOMContentLoaded", () => {
       const avgMin = completed.length ? (totalMs / completed.length / 60000).toFixed(1) : "0";
       const maxMin = completed.length ? Math.max(...completed.map(inc => (inc.end - inc.start) / 60000)).toFixed(1) : "0";
 
-      html += '<div class="detail-card"><h3>Incident Summary</h3><div class="queue-stats">' +
+      html += '<div class="queue-stats">' +
         '<div class="queue-stat ' + (incidents.length > 0 ? "warn" : "ok") + '"><div class="num">' + incidents.length + '</div><div class="lbl">Incidents</div></div>' +
         (ongoing.length ? '<div class="queue-stat crit"><div class="num">' + ongoing.length + '</div><div class="lbl">Ongoing</div></div>' : '') +
         '<div class="queue-stat ok"><div class="num">' + Math.round(totalMs / 60000) + 'm</div><div class="lbl">Total Down</div></div>' +
         '<div class="queue-stat ok"><div class="num">' + avgMin + 'm</div><div class="lbl">Avg</div></div>' +
         '<div class="queue-stat ' + (parseFloat(maxMin) > 10 ? "crit" : parseFloat(maxMin) > 5 ? "warn" : "ok") + '"><div class="num">' + maxMin + 'm</div><div class="lbl">Longest</div></div>' +
-        '</div></div>';
+        '</div>';
 
-      html += '<div class="detail-card" style="grid-column:1/-1"><h3>Incidents</h3>' +
-        '<table class="detail-table">' +
+      html += '<table class="detail-table" style="margin-top:8px">' +
         '<tr><th style="text-align:left;color:#64748b;font-size:10px;padding:4px 0">Time Down</th><th style="text-align:left;color:#64748b;font-size:10px;padding:4px 0">Time Up</th><th style="text-align:right;color:#64748b;font-size:10px;padding:4px 0">Duration</th><th style="text-align:right;color:#64748b;font-size:10px;padding:4px 0">HTTP</th><th style="text-align:right;color:#64748b;font-size:10px;padding:4px 0">Status</th></tr>';
 
       incidents.slice(-20).reverse().forEach(inc => {
@@ -581,10 +608,11 @@ document.addEventListener("DOMContentLoaded", () => {
           '<td style="text-align:right;color:var(--' + sev + ',#f1f5f9)">' + statusLabel + '</td>' +
           '</tr>';
       });
-      html += '</table></div>';
+      html += '</table>';
     } else {
-      html += '<div class="detail-card"><h3>Downtime History</h3><p style="color:#64748b;font-size:11px">No downtime incidents recorded. The monitor has not detected any outages for this site.</p></div>';
+      html += '<p style="color:#64748b;font-size:11px">No browser-detected incidents. The monitor polls every 60 seconds and records outages here.</p>';
     }
+    html += '</div>';
 
     document.getElementById("lightboxContent").innerHTML = html;
     document.getElementById("lightboxOverlay").classList.add("open");
