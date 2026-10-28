@@ -550,16 +550,16 @@ document.addEventListener("DOMContentLoaded", () => {
     let html = "";
 
     // ── Server-Detected Incidents (GCM HTTP response monitoring) ──
-    html += '<div class="detail-card"><h3>Server-Detected Incidents</h3>';
+    html += '<div class="detail-card" style="grid-column:1/-1"><h3>Server-Detected Incidents</h3>';
     if (serverIncidents.length > 0) {
       const downCount = serverIncidents.filter(inc => inc.event === "down").length;
       const recCount = serverIncidents.filter(inc => inc.event === "recovered").length;
-      html += '<div class="queue-stats">' +
-        '<div class="queue-stat ' + (downCount > 0 ? "crit" : "ok") + '"><div class="num">' + downCount + '</div><div class="lbl">Downtime</div></div>' +
-        '<div class="queue-stat ok"><div class="num">' + recCount + '</div><div class="lbl">Recoveries</div></div>' +
-        '<div class="queue-stat ok"><div class="num">' + serverIncidents.length + '</div><div class="lbl">Total Events</div></div>' +
+      html += '<div class="queue-stats" style="margin-bottom:8px">' +
+        '<div class="queue-stat ' + (downCount > 0 ? "crit" : "ok") + '" style="flex:1"><div class="num">' + downCount + '</div><div class="lbl">Downtime</div></div>' +
+        '<div class="queue-stat ok" style="flex:1"><div class="num">' + recCount + '</div><div class="lbl">Recoveries</div></div>' +
+        '<div class="queue-stat ok" style="flex:1"><div class="num">' + serverIncidents.length + '</div><div class="lbl">Total Events</div></div>' +
         '</div>';
-      html += '<table class="detail-table" style="margin-top:8px">' +
+      html += '<table class="detail-table" style="width:100%">' +
         '<tr><th style="text-align:left;color:#64748b;font-size:10px;padding:4px 0">Time</th><th style="text-align:right;color:#64748b;font-size:10px;padding:4px 0">Event</th><th style="text-align:right;color:#64748b;font-size:10px;padding:4px 0">Response</th></tr>';
       serverIncidents.slice(-20).reverse().forEach(inc => {
         const t = new Date((inc.ts || 0) * 1000).toLocaleString();
@@ -575,7 +575,7 @@ document.addEventListener("DOMContentLoaded", () => {
     html += '</div>';
 
     // ── Browser-Detected Incidents (Web Monitor polling) ──
-    html += '<div class="detail-card"><h3>Browser-Detected Incidents</h3>';
+    html += '<div class="detail-card" style="grid-column:1/-1"><h3>Browser-Detected Incidents</h3>';
     if (incidents.length > 0) {
       const completed = incidents.filter(inc => inc.end);
       const ongoing = incidents.filter(inc => !inc.end);
@@ -583,15 +583,15 @@ document.addEventListener("DOMContentLoaded", () => {
       const avgMin = completed.length ? (totalMs / completed.length / 60000).toFixed(1) : "0";
       const maxMin = completed.length ? Math.max(...completed.map(inc => (inc.end - inc.start) / 60000)).toFixed(1) : "0";
 
-      html += '<div class="queue-stats">' +
-        '<div class="queue-stat ' + (incidents.length > 0 ? "warn" : "ok") + '"><div class="num">' + incidents.length + '</div><div class="lbl">Incidents</div></div>' +
-        (ongoing.length ? '<div class="queue-stat crit"><div class="num">' + ongoing.length + '</div><div class="lbl">Ongoing</div></div>' : '') +
-        '<div class="queue-stat ok"><div class="num">' + Math.round(totalMs / 60000) + 'm</div><div class="lbl">Total Down</div></div>' +
-        '<div class="queue-stat ok"><div class="num">' + avgMin + 'm</div><div class="lbl">Avg</div></div>' +
-        '<div class="queue-stat ' + (parseFloat(maxMin) > 10 ? "crit" : parseFloat(maxMin) > 5 ? "warn" : "ok") + '"><div class="num">' + maxMin + 'm</div><div class="lbl">Longest</div></div>' +
+      html += '<div class="queue-stats" style="margin-bottom:8px">' +
+        '<div class="queue-stat ' + (incidents.length > 0 ? "warn" : "ok") + '" style="flex:1"><div class="num">' + incidents.length + '</div><div class="lbl">Incidents</div></div>' +
+        (ongoing.length ? '<div class="queue-stat crit" style="flex:1"><div class="num">' + ongoing.length + '</div><div class="lbl">Ongoing</div></div>' : '') +
+        '<div class="queue-stat ok" style="flex:1"><div class="num">' + Math.round(totalMs / 60000) + 'm</div><div class="lbl">Total Down</div></div>' +
+        '<div class="queue-stat ok" style="flex:1"><div class="num">' + avgMin + 'm</div><div class="lbl">Avg</div></div>' +
+        '<div class="queue-stat ' + (parseFloat(maxMin) > 10 ? "crit" : parseFloat(maxMin) > 5 ? "warn" : "ok") + '" style="flex:1"><div class="num">' + maxMin + 'm</div><div class="lbl">Longest</div></div>' +
         '</div>';
 
-      html += '<table class="detail-table" style="margin-top:8px">' +
+      html += '<table class="detail-table" style="width:100%">' +
         '<tr><th style="text-align:left;color:#64748b;font-size:10px;padding:4px 0">Time Down</th><th style="text-align:left;color:#64748b;font-size:10px;padding:4px 0">Time Up</th><th style="text-align:right;color:#64748b;font-size:10px;padding:4px 0">Duration</th><th style="text-align:right;color:#64748b;font-size:10px;padding:4px 0">HTTP</th><th style="text-align:right;color:#64748b;font-size:10px;padding:4px 0">Status</th></tr>';
 
       incidents.slice(-20).reverse().forEach(inc => {
