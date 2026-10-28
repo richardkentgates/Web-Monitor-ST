@@ -312,17 +312,34 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     let services = "";
-    if (site.gcm) {
-      const g = site.gcm;
-      if (g.apache) services += '<span class="svc ' + (g.apache.running ? "ok" : "down") + '">Apache</span>';
-      if (g.database) services += '<span class="svc ' + (g.database.running ? "ok" : "down") + '">MariaDB</span>';
-      if (g.wordpress) services += '<span class="svc ' + (g.wordpress.running ? "ok" : "down") + '">WP</span>';
+    // MetaManager daemons (compress, meta)
+    if (site.mm && !site.mm._error && site.mm.daemons) {
+      Object.entries(site.mm.daemons).forEach(([name, d]) => {
+        services += '<span class="svc ' + (d.running ? "ok" : "down") + '">' + esc(name) + '</span>';
+      });
     }
-      if (site.mm && !site.mm._error && site.mm.daemons) {
-        Object.entries(site.mm.daemons).forEach(([name, d]) => {
-          services += '<span class="svc ' + (d.running ? "ok" : "down") + '">' + esc(name) + '</span>';
-        });
-      }
+    // GCM daemon-driven services (backup, cron, upgrade, pending, status, scan)
+    if (site.gcm && !site.gcm._error) {
+      const g = site.gcm;
+      const daemonServices = [
+        ["backup", g.backup_timer],
+        ["cron", g.wp_cron],
+        ["upgrade", g.upgrade_timer],
+        ["pending", g.pending_timer],
+        ["status", g.gcm_status_timer || null],
+        ["scan", g.security_scan ? { active: g.security_scan.ok } : null]
+      ];
+      daemonServices.forEach(([name, d]) => {
+        if (d && d.active !== undefined) {
+          services += '<span class="svc ' + (d.active ? "ok" : "down") + '">' + name + '</span>';
+        }
+      });
+    }
+    // MXRoute daemon (driven by wp-cron)
+    if (site.mxr && !site.mxr._error) {
+      const mxrOk = (site.mxr.pending !== undefined || site.mxr.sent !== undefined);
+      services += '<span class="svc ' + (mxrOk ? "ok" : "down") + '">mxroute</span>';
+    }
 
     const spark = history.length >= 2
       ? '<div class="sparkline-wrap">' + sparkline(history, "#3b82f6") + '</div>'
