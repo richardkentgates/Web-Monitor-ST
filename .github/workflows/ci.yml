@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, dev, test ]
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    branches: [ main, dev, test ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate JS syntax
+        run: node --check monitor.js
+
+      - name: Validate HTML structure
+        run: |
+          test -f index.html
+          test -f style.css
+          test -f monitor.js
+          echo "All core files present"
