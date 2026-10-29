@@ -415,6 +415,19 @@ document.addEventListener("DOMContentLoaded", () => {
           html += '<tr><td>Size</td><td>' + esc(g.backup.size) + '</td></tr>';
           html += '<tr><td>Archive</td><td>' + (g.backup.archive_valid ? "✓ Valid" : "✗ Corrupt") + '</td></tr>';
           html += '<tr><td>SQL Dump</td><td>' + (g.backup.sql_ok ? "✓ OK" : "✗ Failed") + '</td></tr>';
+          if (g.backup.meta) {
+            var m = g.backup.meta;
+            html += '<tr><td colspan="2" style="border-top:1px solid var(--border);padding-top:6px;color:#64748b;font-size:10px">METADATA</td></tr>';
+            if (m.timestamp_hr) html += '<tr><td>Created</td><td>' + esc(m.timestamp_hr) + '</td></tr>';
+            if (m.gcm_version) html += '<tr><td>GCM Version</td><td>' + esc(m.gcm_version) + '</td></tr>';
+            if (m.wp_version) html += '<tr><td>WordPress</td><td>' + esc(m.wp_version) + '</td></tr>';
+            if (m.php_version) html += '<tr><td>PHP</td><td>' + esc(m.php_version) + '</td></tr>';
+            if (m.site_title) html += '<tr><td>Site</td><td>' + esc(m.site_title) + '</td></tr>';
+            if (m.hostname) html += '<tr><td>Host</td><td>' + esc(m.hostname) + '</td></tr>';
+            if (m.db_name) html += '<tr><td>Database</td><td>' + esc(m.db_name) + ' (' + esc(m.table_prefix) + ')</td></tr>';
+            if (m.sql_size) html += '<tr><td>SQL Size</td><td>' + (m.sql_size / 1024).toFixed(1) + ' KB</td></tr>';
+            if (m.tar_size) html += '<tr><td>TAR Size</td><td>' + (m.tar_size / 1048576).toFixed(1) + ' MB</td></tr>';
+          }
         }
         if (g.backup_timer) {
           html += '<tr><td>Timer</td><td>' + (g.backup_timer.active ? "✓ Active" : "✗ Inactive") + '</td></tr>';
