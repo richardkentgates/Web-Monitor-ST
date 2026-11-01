@@ -227,6 +227,7 @@ document.addEventListener("DOMContentLoaded", () => {
         cache: "no-store"
       });
       const httpCode = res.status;
+      if (httpCode === 404) return { _not_installed: true, _code: 404, _httpCode: 404 };
       if (!res.ok) return { _error: true, _code: httpCode, _httpCode: httpCode };
       const data = await res.json();
       data._httpCode = httpCode;
@@ -258,9 +259,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const mmOk = mm && !mm._error;
     const mxrOk = mxr && !mxr._error;
 
-    let status = "Up";
-    if (!gcmOk && !mmOk && !mxrOk) status = "Down";
-    else if (!gcmOk || !mmOk || !mxrOk) status = "Partial";
+    // Not-installed components (HTTP 404) are neutral — e.g. MetaManager
+    // is intentionally inactive where third-party image/SEO plugins run.
+    const status = gcmHealthRollup(gcm, mm, mxr);
 
     const prev = sites[index].status;
     if (prev !== "Unknown" && prev !== status && Notification.permission === "granted") {
