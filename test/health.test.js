@@ -6,31 +6,31 @@ const ok = { backup_timer: {} };
 const err = { _error: true, _code: 500 };
 const absent = { _not_installed: true, _code: 404 };
 
-test("all installed and healthy is Up", () => {
+test("all three healthy is Up", () => {
   assert.strictEqual(gcmHealthRollup(ok, ok, ok), "Up");
 });
 
-test("not-installed component is neutral", () => {
-  assert.strictEqual(gcmHealthRollup(ok, absent, ok), "Up");
+test("missing component (404) is Partial — detection is the contract", () => {
+  assert.strictEqual(gcmHealthRollup(ok, absent, ok), "Partial");
 });
 
-test("two not-installed components is Up when the rest are healthy", () => {
-  assert.strictEqual(gcmHealthRollup(ok, absent, absent), "Up");
+test("two missing components is Partial", () => {
+  assert.strictEqual(gcmHealthRollup(ok, absent, absent), "Partial");
 });
 
 test("one failing installed component is Partial", () => {
   assert.strictEqual(gcmHealthRollup(ok, err, ok), "Partial");
 });
 
-test("failing component alongside not-installed is Partial", () => {
+test("failing alongside missing is Partial", () => {
   assert.strictEqual(gcmHealthRollup(ok, absent, err), "Partial");
 });
 
-test("all installed components failing is Down", () => {
+test("all components failing is Down", () => {
   assert.strictEqual(gcmHealthRollup(err, err, err), "Down");
 });
 
-test("only installed component failing is Down", () => {
+test("gcm failing and the rest missing is Down", () => {
   assert.strictEqual(gcmHealthRollup(err, absent, absent), "Down");
 });
 

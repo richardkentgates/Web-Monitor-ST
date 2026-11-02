@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>WordPress Monitor</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=20261102.1">
 </head>
 <body>
 <header class="topbar">
@@ -15,6 +15,7 @@
   <div class="topbar-right">
     <button id="notifBtn" class="btn btn-ghost btn-sm" onclick="enableNotifications()">Enable Notifications</button>
     <span class="countdown" id="countdown">60s</span>
+    <span class="build" title="build version" style="color:#475569;font-size:10px;margin-left:8px">v20261102.1</span>
     <button class="btn btn-ghost btn-sm" onclick="exportSites()">Export</button>
     <button class="btn btn-ghost btn-sm" onclick="importSites()">Import</button>
     <input id="importFile" type="file" accept="application/json" hidden>
@@ -40,7 +41,7 @@
   </div>
 </div>
 
-<script src="health.js"></script>
-  <script src="monitor.js"></script>
+<script src="health.js?v=20261102.1"></script>
+  <script src="monitor.js?v=20261102.1"></script>
 </body>
 </html>

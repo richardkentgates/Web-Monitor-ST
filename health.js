@@ -1,17 +1,13 @@
 // Site health rollup for GCM Web Monitor.
-// An endpoint answering 404 means the component is not installed on that
-// site (e.g. MetaManager intentionally inactive where a third-party image
-// plugin is in use) — neutral, never counted as down.
+// Detection is the contract: ALL three components (gcm, metamanager,
+// mxroute) must answer healthy for Up. A component that answers 404 is
+// NOT DETECTED (not installed / not active) — the site is Partial, never
+// silently promoted to Up. All failing = Down.
 function gcmHealthRollup(gcm, mm, mxr) {
-  const installed = [];
-  for (const [name, ep] of [["gcm", gcm], ["metamanager", mm], ["mxroute", mxr]]) {
-    if (ep && ep._not_installed) continue;
-    installed.push({ name, ok: ep && !ep._error });
-  }
-  if (installed.length === 0) return "Down";
-  const okCount = installed.filter((e) => e.ok).length;
-  if (okCount === installed.length) return "Up";
-  if (okCount === 0) return "Down";
+  const endpoints = [gcm, mm, mxr];
+  const ok = endpoints.filter((ep) => ep && !ep._error && !ep._not_installed).length;
+  if (ok === endpoints.length) return "Up";
+  if (ok === 0) return "Down";
   return "Partial";
 }
 
