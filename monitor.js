@@ -8,7 +8,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (Notification.permission === "granted")
       document.getElementById("notifBtn").style.display = "none";
   }
-  function enableNotifications() {
+  // Inline onclick handlers resolve on window — expose the handler
+  window.enableNotifications = function enableNotifications() {
     const s = document.getElementById("notifStatus");
     s.innerHTML = "Notifications: <strong>Waiting…</strong>";
     Notification.requestPermission().then(p => {
