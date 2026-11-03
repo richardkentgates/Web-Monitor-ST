@@ -39,9 +39,22 @@ Monitors all GCM-managed WordPress sites by fetching three REST endpoints per si
 
 ### Other
 - **Auto-poll** — checks all sites every 60 seconds
-- **Notifications** — browser notifications on status change
+- **Notifications** — browser notifications on status change (`window.enableNotifications`)
 - **Import/Export** — site list as JSON
 - **Graceful degradation** — shows "Not installed" notice when MetaManager/MXRoute absent
+
+### Status Semantics (the detection contract)
+
+Detection is the contract: what the endpoints report defines the status.
+
+- A **404 endpoint = not installed / not detected** — it is never "down".
+  Missing components render "Not installed" and are excluded from the rollup.
+- A **detected-but-broken** component (500, empty payload, dead daemon)
+  reads **Partial** (or Down when the site itself is unreachable).
+- Only detected components participate in the rollup: one bad detected
+  component → Partial; HTTP failure or all components bad → Down.
+- Health.js assets are cache-busted with `?v=` and the build version is
+  shown in the footer so stale tabs are visible.
 
 ## Authentication
 
