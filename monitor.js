@@ -115,6 +115,23 @@ document.addEventListener("DOMContentLoaded", () => {
     return val * mult;
   }
 
+  // Server reports its times as local strings plus its timezone — the
+  // status report itself is never converted. Convert only here, for
+  // display, so every time the operator sees is browser time.
+  function fmtServerTime(str, g) {
+    if (!str) return str;
+    const tz = g && g.timezone;
+    const off = tz && tz.offset;
+    if (!off || !/^[+-][0-9]{4}$/.test(off)) return str;
+    const m = String(str).match(/(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}(?::\d{2})?)/);
+    if (!m) return str;
+    const hhmmss = m[2].length === 5 ? m[2] + ":00" : m[2];
+    const iso = m[1] + "T" + hhmmss + off.slice(0, 3) + ":" + off.slice(3);
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return str;
+    return d.toLocaleString() + " (" + tz.name + ")";
+  }
+
   // ── SVG Sparkline ──
   function sparkline(data, color, width = 280, height = 28) {
     if (!data || data.length < 2) return "";
@@ -382,7 +399,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const dpct = pctNum(g.disk.pct);
         const dc = dpct >= 90 ? "#ef4444" : dpct >= 75 ? "#eab308" : "#22c55e";
         gauges += '<div class="gauge-item">' + gauge(dpct, dc) +
-          '<div class="gauge-label">Disk ' + esc(g.disk.used) + '/' + esc(g.disk.total) + '</div></div>';
+          '<div class="gauge-label">VM Disk ' + esc(g.disk.used) + '/' + esc(g.disk.total) + '</div></div>';
       }
       if (g.memory && g.memory.total) {
         const mTotal = parseSize(g.memory.total);
@@ -413,14 +430,18 @@ document.addEventListener("DOMContentLoaded", () => {
       if (g.backup || g.backup_timer) {
         html += '<div class="detail-card"><h3>Backup</h3><table class="detail-table">';
         if (g.backup) {
-          html += '<tr><td>Last Backup</td><td>' + esc(g.backup.date) + '</td></tr>';
-          html += '<tr><td>Size</td><td>' + esc(g.backup.size) + '</td></tr>';
+          html += '<tr><td>Last Backup</td><td>' + esc(fmtServerTime(g.backup.date, g)) + '</td></tr>';
+          html += '<tr><td>Bundle Size</td><td>' + esc(g.backup.size) + '</td></tr>';
+          if (g.site) {
+            html += '<tr><td>Site Files</td><td>' + esc(g.site.tree || "—") + '</td></tr>';
+            html += '<tr><td>Site DB</td><td>' + (g.site.db_size_mb != null ? g.site.db_size_mb + " MB" : "—") + '</td></tr>';
+          }
           html += '<tr><td>Archive</td><td>' + (g.backup.archive_valid ? "✓ Valid" : "✗ Corrupt") + '</td></tr>';
           html += '<tr><td>SQL Dump</td><td>' + (g.backup.sql_ok ? "✓ OK" : "✗ Failed") + '</td></tr>';
           if (g.backup.meta) {
             var m = g.backup.meta;
             html += '<tr><td colspan="2" style="border-top:1px solid var(--border);padding-top:6px;color:#64748b;font-size:10px">METADATA</td></tr>';
-            if (m.timestamp_hr) html += '<tr><td>Created</td><td>' + esc(m.timestamp_hr) + '</td></tr>';
+            if (m.timestamp_hr) html += '<tr><td>Created</td><td>' + esc(fmtServerTime(m.timestamp_hr, g)) + '</td></tr>';
             if (m.gcm_version) html += '<tr><td>GCM Version</td><td>' + esc(m.gcm_version) + '</td></tr>';
             if (m.wp_version) html += '<tr><td>WordPress</td><td>' + esc(m.wp_version) + '</td></tr>';
             if (m.php_version) html += '<tr><td>PHP</td><td>' + esc(m.php_version) + '</td></tr>';
@@ -433,10 +454,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         if (g.backup_timer) {
           html += '<tr><td>Timer</td><td>' + (g.backup_timer.active ? "✓ Active" : "✗ Inactive") + '</td></tr>';
-          if (g.backup_timer.next_run) html += '<tr><td>Next Run</td><td>' + esc(g.backup_timer.next_run) + '</td></tr>';
+          if (g.backup_timer.next_run) html += '<tr><td>Next Run</td><td>' + esc(fmtServerTime(g.backup_timer.next_run, g)) + '</td></tr>';
         }
         if (g.scheduled_backup) {
-          html += '<tr><td>Scheduled</td><td>' + esc(g.scheduled_backup.status) + ' — ' + esc(g.scheduled_backup.date) + '</td></tr>';
+          html += '<tr><td>Scheduled</td><td>' + esc(g.scheduled_backup.status) + ' — ' + esc(fmtServerTime(g.scheduled_backup.date, g)) + '</td></tr>';
         }
         html += '</table></div>';
       }
@@ -454,7 +475,7 @@ document.addEventListener("DOMContentLoaded", () => {
         '<tr><td>Uptime</td><td>' + formatUptime(g.uptime_seconds) + '</td></tr>' +
         '<tr><td>HTTP Latency</td><td>' + esc(site.responseTime) + '</td></tr>' +
         '<tr><td>API Response</td><td>' + esc(site.apiResponse || "—") + ' (3 endpoints)</td></tr>' +
-        (g.disk ? '<tr><td>Disk</td><td>' + esc(g.disk.used) + ' / ' + esc(g.disk.total) + ' (' + esc(g.disk.pct) + ')</td></tr>' : '') +
+        (g.disk ? '<tr><td>VM Disk</td><td>' + esc(g.disk.used) + ' / ' + esc(g.disk.total) + ' (' + esc(g.disk.pct) + ')</td></tr>' : '') +
         (g.memory ? '<tr><td>Memory</td><td>' + esc(g.memory.used) + ' / ' + esc(g.memory.total) + '</td></tr>' : '') +
         (g.swap ? '<tr><td>Swap</td><td>' + esc(g.swap.used) + ' / ' + esc(g.swap.total) + '</td></tr>' : '') +
         '</table></div>';
@@ -470,10 +491,23 @@ document.addEventListener("DOMContentLoaded", () => {
       // ── Timers ──
       if (g.backup_timer || g.pending_timer || g.wp_cron || g.upgrade_timer) {
         html += '<div class="detail-card"><h3>Timers</h3><table class="detail-table">' +
-          (g.backup_timer ? '<tr><td>Backup</td><td>' + (g.backup_timer.active ? "✓" : "✗") + (g.backup_timer.next_run ? ' ' + esc(g.backup_timer.next_run) : '') + '</td></tr>' : '') +
-          (g.upgrade_timer ? '<tr><td>Upgrade</td><td>' + (g.upgrade_timer.active ? "✓" : "✗") + (g.upgrade_timer.next_run ? ' ' + esc(g.upgrade_timer.next_run) : '') + '</td></tr>' : '') +
-          (g.pending_timer ? '<tr><td>Deferred</td><td>' + (g.pending_timer.active ? "✓" : "✗") + (g.pending_timer.next_check ? ' ' + esc(g.pending_timer.next_check) : '') + '</td></tr>' : '') +
-          (g.wp_cron ? '<tr><td>WP Cron</td><td>' + (g.wp_cron.active ? "✓" : "✗") + (g.wp_cron.next_run ? ' ' + esc(g.wp_cron.next_run) : '') + '</td></tr>' : '') +
+          (g.backup_timer ? '<tr><td>Backup</td><td>' + (g.backup_timer.active ? "✓" : "✗") + (g.backup_timer.next_run ? ' ' + esc(fmtServerTime(g.backup_timer.next_run, g)) : '') + '</td></tr>' : '') +
+          (g.upgrade_timer ? '<tr><td>Upgrade</td><td>' + (g.upgrade_timer.active ? "✓" : "✗") + (g.upgrade_timer.next_run ? ' ' + esc(fmtServerTime(g.upgrade_timer.next_run, g)) : '') + '</td></tr>' : '') +
+          (g.pending_timer ? '<tr><td>Deferred</td><td>' + (g.pending_timer.active ? "✓" : "✗") + (g.pending_timer.next_check ? ' ' + esc(fmtServerTime(g.pending_timer.next_check, g)) : '') + '</td></tr>' : '') +
+          (g.wp_cron ? '<tr><td>WP Cron</td><td>' + (g.wp_cron.active ? "✓" : "✗") + (g.wp_cron.next_run ? ' ' + esc(fmtServerTime(g.wp_cron.next_run, g)) : '') + '</td></tr>' : '') +
+          '</table></div>';
+      }
+
+      // ── OS Update (self-overwriting metadata from the upgrade run) ──
+      if (g.os_update) {
+        const ou = g.os_update;
+        const ouOk = ou.result === "ok";
+        html += '<div class="detail-card"><h3>OS Update</h3><table class="detail-table">' +
+          '<tr><td>Last Run</td><td>' + esc(new Date((ou.ts || 0) * 1000).toLocaleString()) + '</td></tr>' +
+          '<tr><td>Result</td><td style="color:' + (ouOk ? "var(--green,#22c55e)" : "var(--red,#ef4444)") + '">' + esc(ou.result || "—") + '</td></tr>' +
+          '<tr><td>Packages Upgraded</td><td>' + (ou.packages_upgraded != null ? ou.packages_upgraded : "—") + '</td></tr>' +
+          '<tr><td>Reboot</td><td>' + (ou.reboot_required ? "Required — " + esc(ou.reboot_action || "—") : "Not required") + '</td></tr>' +
+          (ou.error ? '<tr><td>Error</td><td style="color:var(--red,#ef4444)">' + esc(ou.error) + '</td></tr>' : '') +
           '</table></div>';
       }
 
