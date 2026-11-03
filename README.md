@@ -47,12 +47,15 @@ Monitors all GCM-managed WordPress sites by fetching three REST endpoints per si
 
 Detection is the contract: what the endpoints report defines the status.
 
-- A **404 endpoint = not installed / not detected** — it is never "down".
-  Missing components render "Not installed" and are excluded from the rollup.
+- A **404 endpoint = not installed / not detected** — the component itself
+  is never shown "down"; it renders "Not installed". But a missing
+  component holds the **site** at Partial when anything else is healthy —
+  never silently promoted to Up.
 - A **detected-but-broken** component (500, empty payload, dead daemon)
-  reads **Partial** (or Down when the site itself is unreachable).
-- Only detected components participate in the rollup: one bad detected
-  component → Partial; HTTP failure or all components bad → Down.
+  reads **Partial** alongside healthy ones.
+- Rollup: all three healthy → Up; some healthy → Partial; **zero healthy**
+  (all broken, all missing, or a mix) → Down. HTTP failure is one way to
+  reach zero-healthy, not a separate rule.
 - Health.js assets are cache-busted with `?v=` and the build version is
   shown in the footer so stale tabs are visible.
 

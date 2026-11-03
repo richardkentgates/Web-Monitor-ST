@@ -119,17 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // status report itself is never converted. Convert only here, for
   // display, so every time the operator sees is browser time.
   function fmtServerTime(str, g) {
-    if (!str) return str;
-    const tz = g && g.timezone;
-    const off = tz && tz.offset;
-    if (!off || !/^[+-][0-9]{4}$/.test(off)) return str;
-    const m = String(str).match(/(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}(?::\d{2})?)/);
-    if (!m) return str;
-    const hhmmss = m[2].length === 5 ? m[2] + ":00" : m[2];
-    const iso = m[1] + "T" + hhmmss + off.slice(0, 3) + ":" + off.slice(3);
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return str;
-    return d.toLocaleString() + " (" + tz.name + ")";
+    return gcmFmtServerTime(str, g && g.timezone);
   }
 
   // ── SVG Sparkline ──
