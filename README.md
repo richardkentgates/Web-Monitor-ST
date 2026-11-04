@@ -29,8 +29,13 @@ Monitors all GCM-managed WordPress sites by fetching three REST endpoints per si
 - **Timers** — backup, upgrade, deferred, WP cron
 - **Security** — UFW, fail2ban, ModSecurity, maldet, site integrity
 - **Status Lapses** — bar chart + text readout
+- **OS Update** — last run, result, packages upgraded, reboot action
 - **MetaManager** — daemons, queues, tools
 - **MXRoute** — sent/pending/failed queue stats
+
+All server-reported times convert to browser time for display only (the
+status report itself is never converted); site sizes show as distinct
+measures — VM disk, site files, site DB, bundle size.
 
 ### Downtime History (History button)
 - **Incident Summary** — total incidents, ongoing, total downtime, avg/longest duration
