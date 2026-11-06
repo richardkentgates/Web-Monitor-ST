@@ -408,17 +408,17 @@ document.addEventListener("DOMContentLoaded", () => {
           '<div class="gauge-label">Swap ' + esc(g.swap.used) + '/' + esc(g.swap.total) + '</div></div>';
       }
       if (gauges) {
-        html += '<div class="detail-card"><h3>Hardware</h3><div class="gauge-row">' + gauges + '</div></div>';
+        html += '<div class="detail-card" style="grid-column:span 2"><h3>Resources</h3><div class="gauge-col">' + gauges + '</div></div>';
       }
 
       // ── Load Average ──
       if (g.load_avg) {
-        html += '<div class="detail-card"><h3>CPU Load Average</h3>' + loadChart(g.load_avg) + '</div>';
+        html += '<div class="detail-card" style="grid-column:span 3"><h3>CPU Load Average</h3>' + loadChart(g.load_avg) + '</div>';
       }
 
       // ── Backup ──
       if (g.backup || g.backup_timer) {
-        html += '<div class="detail-card"><h3>Backup</h3><table class="detail-table">';
+        html += '<div class="detail-card" style="grid-column:span 2"><h3>Backup</h3><table class="detail-table">';
         if (g.backup) {
           html += '<tr><td>Last Backup</td><td>' + esc(fmtServerTime(g.backup.date, g)) + '</td></tr>';
           html += '<tr><td>Bundle Size</td><td>' + esc(g.backup.size) + '</td></tr>';
@@ -453,7 +453,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       // ── Versions ──
-      html += '<div class="detail-card"><h3>Versions</h3><table class="detail-table">' +
+      html += '<div class="detail-card" style="grid-column:span 2"><h3>Versions</h3><table class="detail-table">' +
         '<tr><td>GCM</td><td>v' + esc(g.gcm_version) + ' (' + esc(g.gcm_branch) + ')</td></tr>' +
         '<tr><td>WordPress</td><td>v' + esc(g.wp_version) + '</td></tr>' +
         '<tr><td>PHP</td><td>v' + esc(g.php_version) + '</td></tr>' +
@@ -461,7 +461,7 @@ document.addEventListener("DOMContentLoaded", () => {
         '</table></div>';
 
       // ── System ──
-      html += '<div class="detail-card"><h3>System</h3><table class="detail-table">' +
+      html += '<div class="detail-card" style="grid-column:span 2"><h3>System</h3><table class="detail-table">' +
         '<tr><td>Uptime</td><td>' + formatUptime(g.uptime_seconds) + '</td></tr>' +
         '<tr><td>HTTP Latency</td><td>' + esc(site.responseTime) + '</td></tr>' +
         '<tr><td>API Response</td><td>' + esc(site.apiResponse || "—") + ' (3 endpoints)</td></tr>' +
@@ -471,7 +471,7 @@ document.addEventListener("DOMContentLoaded", () => {
         '</table></div>';
 
       // ── Services ──
-      html += '<div class="detail-card"><h3>Services</h3><table class="detail-table">' +
+      html += '<div class="detail-card" style="grid-column:span 2"><h3>Services</h3><table class="detail-table">' +
         '<tr><td>Apache</td><td>' + (g.apache && g.apache.running ? "✓ Running v" + esc(g.apache.version || "") : "✗ Down") + '</td></tr>' +
         '<tr><td>Database</td><td>' + (g.database && g.database.running ? "✓ " + esc(g.database.type || "MariaDB") + " v" + esc(g.database.version || "") : "✗ Down") + '</td></tr>' +
         '<tr><td>WordPress</td><td>' + (g.wordpress && g.wordpress.running ? "✓ Running" : "✗ Down") + '</td></tr>' +
@@ -480,7 +480,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // ── Timers ──
       if (g.backup_timer || g.pending_timer || g.wp_cron || g.upgrade_timer) {
-        html += '<div class="detail-card"><h3>Timers</h3><table class="detail-table">' +
+        html += '<div class="detail-card" style="grid-column:span 2"><h3>Timers</h3><table class="detail-table">' +
           (g.backup_timer ? '<tr><td>Backup</td><td>' + (g.backup_timer.active ? "✓" : "✗") + (g.backup_timer.next_run ? ' ' + esc(fmtServerTime(g.backup_timer.next_run, g)) : '') + '</td></tr>' : '') +
           (g.upgrade_timer ? '<tr><td>Upgrade</td><td>' + (g.upgrade_timer.active ? "✓" : "✗") + (g.upgrade_timer.next_run ? ' ' + esc(fmtServerTime(g.upgrade_timer.next_run, g)) : '') + '</td></tr>' : '') +
           (g.pending_timer ? '<tr><td>Deferred</td><td>' + (g.pending_timer.active ? "✓" : "✗") + (g.pending_timer.next_check ? ' ' + esc(fmtServerTime(g.pending_timer.next_check, g)) : '') + '</td></tr>' : '') +
@@ -492,7 +492,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (g.os_update) {
         const ou = g.os_update;
         const ouOk = ou.result === "ok";
-        html += '<div class="detail-card"><h3>OS Update</h3><table class="detail-table">' +
+        html += '<div class="detail-card" style="grid-column:span 2"><h3>OS Update</h3><table class="detail-table">' +
           '<tr><td>Last Run</td><td>' + esc(new Date((ou.ts || 0) * 1000).toLocaleString()) + '</td></tr>' +
           '<tr><td>Result</td><td style="color:' + (ouOk ? "var(--green,#22c55e)" : "var(--red,#ef4444)") + '">' + esc(ou.result || "—") + '</td></tr>' +
           '<tr><td>Packages Upgraded</td><td>' + (ou.packages_upgraded != null ? ou.packages_upgraded : "—") + '</td></tr>' +
@@ -503,7 +503,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // ── Security ──
       if (g.ufw || g.fail2ban || g.modsecurity || g.maldet || g.site_integrity) {
-        html += '<div class="detail-card"><h3>Security</h3><table class="detail-table">' +
+        html += '<div class="detail-card" style="grid-column:span 2"><h3>Security</h3><table class="detail-table">' +
           (g.ufw ? '<tr><td>UFW</td><td>' + (g.ufw.active ? "✓ Active" : "✗ Inactive") + ' (' + g.ufw.rules + ' rules)</td></tr>' : '') +
           (g.fail2ban ? '<tr><td>fail2ban</td><td>' + esc(Object.entries(g.fail2ban).map(([k,v]) => k + ":" + v).join(" ")) + '</td></tr>' : '') +
           (g.modsecurity ? '<tr><td>ModSec</td><td>' + (g.modsecurity.installed ? "✓ " + esc(g.modsecurity.engine) + " (" + g.modsecurity.rules + " rules, " + (g.modsecurity.recent_blocks||0) + " blocks)" : "✗ Not installed") + '</td></tr>' : '') +
@@ -519,7 +519,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // ── Status Lapses ──
       if (g.status_lapses && g.status_lapses.length > 0) {
-        html += '<div class="detail-card"><h3>Status Lapses</h3>' +
+        html += '<div class="detail-card" style="grid-column:span 3"><h3>Status Lapses</h3>' +
           '<div style="margin-bottom:4px">' + barChart(g.status_lapses) + '</div>' +
           '<div style="font-size:10px;color:#64748b">' + lapseStats(g.status_lapses) + '</div>' +
           '</div>';
@@ -529,7 +529,8 @@ document.addEventListener("DOMContentLoaded", () => {
       html += '<div class="detail-card"><h3>GCM</h3><p style="color:#64748b;font-size:11px">No data — endpoint unreachable or unauthorized.</p></div>';
     }
 
-    // MetaManager
+    // MetaManager + MXRoute: one combined tile (plugin layer + mail layer)
+    let mmSection = "";
     if (site.mm && !site.mm._error && (site.mm.plugin_version || site.mm.daemons)) {
       const m = site.mm;
       let daemonRows = "";
@@ -538,23 +539,22 @@ document.addEventListener("DOMContentLoaded", () => {
           daemonRows += '<tr><td>' + esc(name) + '</td><td>' + (d.running ? "✓ pid " + d.pid : "✗ Down") + '</td></tr>';
         });
       }
-      html += '<div class="detail-card"><h3>MetaManager</h3><table class="detail-table">' +
+      mmSection = '<h4 class="subhead">MetaManager</h4><table class="detail-table">' +
         (m.plugin_version ? '<tr><td>Plugin</td><td>v' + esc(m.plugin_version) + '</td></tr>' : '') +
         (m.daemon_version ? '<tr><td>Daemon</td><td>v' + esc(m.daemon_version) + '</td></tr>' : '') +
         daemonRows +
         (m.queues ? '<tr><td>Queues</td><td>compress:' + m.queues.compress + ' meta:' + m.queues.meta + ' done:' + m.queues.completed + ' fail:' + m.queues.failed + '</td></tr>' : '') +
         (m.tools ? '<tr><td>Tools</td><td>' + (Object.entries(m.tools).filter(([,v]) => !v).length ? "Missing: " + esc(Object.entries(m.tools).filter(([,v]) => !v).map(([k]) => k).join(", ")) : "✓ All available") + '</td></tr>' : '') +
-        '</table></div>';
+        '</table>';
     } else {
-      html += '<div class="detail-card"><h3>MetaManager</h3><p style="color:#64748b;font-size:11px">Not installed or endpoint unavailable on this site.</p></div>';
+      mmSection = '<h4 class="subhead">MetaManager</h4><p style="color:#64748b;font-size:11px">Not installed or endpoint unavailable on this site.</p>';
     }
-
-    // MXRoute
+    let mxSection = "";
     if (site.mxr && !site.mxr._error && (site.mxr.sent !== undefined || site.mxr.pending !== undefined)) {
       const x = site.mxr;
       const qClass = (x.failed||0) > 0 ? "crit" : (x.pending||0) > 0 ? "warn" : "ok";
       const pendingClass = (x.pending||0) > 0 ? "warn" : "ok";
-      html += '<div class="detail-card"><h3>MXRoute Mailer</h3>' +
+      mxSection = '<h4 class="subhead">MXRoute Mailer</h4>' +
         '<div class="queue-stats">' +
           '<div class="queue-stat ok"><div class="num">' + (x.sent||0) + '</div><div class="lbl">Sent</div></div>' +
           '<div class="queue-stat ' + pendingClass + '"><div class="num">' + (x.pending||0) + '</div><div class="lbl">Pending</div></div>' +
@@ -563,11 +563,12 @@ document.addEventListener("DOMContentLoaded", () => {
         (x.cron ? '<table class="detail-table" style="margin-top:6px">' +
           '<tr><td>Last Run</td><td>' + esc(x.cron.last_run) + '</td></tr>' +
           '<tr><td>Next Run</td><td>' + esc(x.cron.next_scheduled) + '</td></tr>' +
-          '</table>' : '') +
-        '</div>';
+          '</table>' : '');
     } else {
-      html += '<div class="detail-card"><h3>MXRoute Mailer</h3><p style="color:#64748b;font-size:11px">Not installed or endpoint unavailable on this site.</p></div>';
+      mxSection = '<h4 class="subhead">MXRoute Mailer</h4><p style="color:#64748b;font-size:11px">Not installed or endpoint unavailable on this site.</p>';
     }
+    html += '<div class="detail-card" style="grid-column:span 2"><h3>MetaManager &amp; Mail</h3>' +
+      mmSection + '<div class="subsep"></div>' + mxSection + '</div>';
 
     return html;
   }
