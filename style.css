@@ -307,11 +307,30 @@ body {
 .lightbox-close:hover { color: var(--text); background: var(--surface2); }
 .lightbox-body {
   padding: 12px 16px;
+  display: block;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+/* Details: 6 columns — three tall tiles, then the remaining tiles
+   stacked two per column, each column matching the tall tiles' height. */
+.detail-cols {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 8px;
-  max-height: calc(100vh - 120px);
-  overflow-y: auto;
+}
+.detail-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.detail-col > .detail-card {
+  flex: 1;
+  min-height: 0;
+}
+@media (max-width: 1000px) {
+  .detail-cols { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* ── Detail Sections ── */
@@ -421,6 +440,7 @@ body {
 @media (max-width: 640px) {
   .site-grid { grid-template-columns: 1fr; }
   .lightbox-body { grid-template-columns: 1fr; }
+  .detail-cols { grid-template-columns: 1fr; }
   .add-bar { flex-direction: column; }
   .input-url, .input-user, .input-pass { width: 100%; }
 }

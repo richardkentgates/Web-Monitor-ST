@@ -378,12 +378,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ── Detail HTML ──
   function detailHtml(site) {
-    let html = "";
+    let gfx = "", mmMx = "", backup = "", versions = "", system = "";
+    let services = "", timers = "", osupd = "", security = "", fallback = "";
 
     if (site.gcm) {
       const g = site.gcm;
 
-      // ── Hardware Gauges ──
+      // ── Graphics tile: storage circles (horizontal) + CPU + check lag ──
       let gauges = "";
       if (g.disk) {
         const dpct = pctNum(g.disk.pct);
@@ -407,61 +408,62 @@ document.addEventListener("DOMContentLoaded", () => {
         gauges += '<div class="gauge-item">' + gauge(spct, sc) +
           '<div class="gauge-label">Swap ' + esc(g.swap.used) + '/' + esc(g.swap.total) + '</div></div>';
       }
-      if (gauges) {
-        html += '<div class="detail-card" style="grid-column:span 2"><h3>Resources</h3><div class="gauge-col">' + gauges + '</div></div>';
-      }
-
-      // ── Load Average ──
-      if (g.load_avg) {
-        html += '<div class="detail-card" style="grid-column:span 3"><h3>CPU Load Average</h3>' + loadChart(g.load_avg) + '</div>';
+      const lapses = (g.status_lapses && g.status_lapses.length > 0)
+        ? '<div style="margin-bottom:4px">' + barChart(g.status_lapses) + '</div>' +
+          '<div style="font-size:10px;color:#64748b">' + lapseStats(g.status_lapses) + '</div>'
+        : "";
+      if (gauges || g.load_avg || lapses) {
+        gfx = '<div class="detail-card"><h3>Resources &amp; Activity</h3>' +
+          (gauges ? '<div class="gauge-row">' + gauges + '</div>' : '') +
+          (g.load_avg ? '<div class="subsep"></div><div class="subhead">CPU Load</div>' + loadChart(g.load_avg) : '') +
+          (lapses ? '<div class="subsep"></div><div class="subhead">Check Lag</div>' + lapses : '') +
+          '</div>';
       }
 
       // ── Backup ──
       if (g.backup || g.backup_timer) {
-        html += '<div class="detail-card" style="grid-column:span 2"><h3>Backup</h3><table class="detail-table">';
+        backup = '<div class="detail-card"><h3>Backup</h3><table class="detail-table">';
         if (g.backup) {
-          html += '<tr><td>Last Backup</td><td>' + esc(fmtServerTime(g.backup.date, g)) + '</td></tr>';
-          html += '<tr><td>Bundle Size</td><td>' + esc(g.backup.size) + '</td></tr>';
+          backup += '<tr><td>Last Backup</td><td>' + esc(fmtServerTime(g.backup.date, g)) + '</td></tr>';
+          backup += '<tr><td>Bundle Size</td><td>' + esc(g.backup.size) + '</td></tr>';
           if (g.site) {
-            html += '<tr><td>Site Files</td><td>' + esc(g.site.tree || "—") + '</td></tr>';
-            html += '<tr><td>Site DB</td><td>' + (g.site.db_size_mb != null ? g.site.db_size_mb + " MB" : "—") + '</td></tr>';
+            backup += '<tr><td>Site Files</td><td>' + esc(g.site.tree || "—") + '</td></tr>';
+            backup += '<tr><td>Site DB</td><td>' + (g.site.db_size_mb != null ? g.site.db_size_mb + " MB" : "—") + '</td></tr>';
           }
-          html += '<tr><td>Archive</td><td>' + (g.backup.archive_valid ? "✓ Valid" : "✗ Corrupt") + '</td></tr>';
-          html += '<tr><td>SQL Dump</td><td>' + (g.backup.sql_ok ? "✓ OK" : "✗ Failed") + '</td></tr>';
+          backup += '<tr><td>Archive</td><td>' + (g.backup.archive_valid ? "✓ Valid" : "✗ Corrupt") + '</td></tr>';
+          backup += '<tr><td>SQL Dump</td><td>' + (g.backup.sql_ok ? "✓ OK" : "✗ Failed") + '</td></tr>';
           if (g.backup.meta) {
             var m = g.backup.meta;
-            html += '<tr><td colspan="2" style="border-top:1px solid var(--border);padding-top:6px;color:#64748b;font-size:10px">METADATA</td></tr>';
-            if (m.timestamp_hr) html += '<tr><td>Created</td><td>' + esc(fmtServerTime(m.timestamp_hr, g)) + '</td></tr>';
-            if (m.gcm_version) html += '<tr><td>GCM Version</td><td>' + esc(m.gcm_version) + '</td></tr>';
-            if (m.wp_version) html += '<tr><td>WordPress</td><td>' + esc(m.wp_version) + '</td></tr>';
-            if (m.php_version) html += '<tr><td>PHP</td><td>' + esc(m.php_version) + '</td></tr>';
-            if (m.site_title) html += '<tr><td>Site</td><td>' + esc(m.site_title) + '</td></tr>';
-            if (m.hostname) html += '<tr><td>Host</td><td>' + esc(m.hostname) + '</td></tr>';
-            if (m.db_name) html += '<tr><td>Database</td><td>' + esc(m.db_name) + ' (' + esc(m.table_prefix) + ')</td></tr>';
-            if (m.sql_size) html += '<tr><td>SQL Size</td><td>' + (m.sql_size / 1024).toFixed(1) + ' KB</td></tr>';
-            if (m.tar_size) html += '<tr><td>TAR Size</td><td>' + (m.tar_size / 1048576).toFixed(1) + ' MB</td></tr>';
+            backup += '<tr><td colspan="2" style="border-top:1px solid var(--border);padding-top:6px;color:#64748b;font-size:10px">METADATA</td></tr>';
+            if (m.timestamp_hr) backup += '<tr><td>Created</td><td>' + esc(fmtServerTime(m.timestamp_hr, g)) + '</td></tr>';
+            if (m.gcm_version) backup += '<tr><td>GCM Version</td><td>' + esc(m.gcm_version) + '</td></tr>';
+            if (m.wp_version) backup += '<tr><td>WordPress</td><td>' + esc(m.wp_version) + '</td></tr>';
+            if (m.php_version) backup += '<tr><td>PHP</td><td>' + esc(m.php_version) + '</td></tr>';
+            if (m.site_title) backup += '<tr><td>Site</td><td>' + esc(m.site_title) + '</td></tr>';
+            if (m.hostname) backup += '<tr><td>Host</td><td>' + esc(m.hostname) + '</td></tr>';
+            if (m.db_name) backup += '<tr><td>Database</td><td>' + esc(m.db_name) + ' (' + esc(m.table_prefix) + ')</td></tr>';
+            if (m.sql_size) backup += '<tr><td>SQL Size</td><td>' + (m.sql_size / 1024).toFixed(1) + ' KB</td></tr>';
+            if (m.tar_size) backup += '<tr><td>TAR Size</td><td>' + (m.tar_size / 1048576).toFixed(1) + ' MB</td></tr>';
           }
         }
         if (g.backup_timer) {
-          html += '<tr><td>Timer</td><td>' + (g.backup_timer.active ? "✓ Active" : "✗ Inactive") + '</td></tr>';
-          if (g.backup_timer.next_run) html += '<tr><td>Next Run</td><td>' + esc(fmtServerTime(g.backup_timer.next_run, g)) + '</td></tr>';
+          backup += '<tr><td>Timer</td><td>' + (g.backup_timer.active ? "✓ Active" : "✗ Inactive") + '</td></tr>';
+          if (g.backup_timer.next_run) backup += '<tr><td>Next Run</td><td>' + esc(fmtServerTime(g.backup_timer.next_run, g)) + '</td></tr>';
         }
         if (g.scheduled_backup) {
-          html += '<tr><td>Scheduled</td><td>' + esc(g.scheduled_backup.status) + ' — ' + esc(fmtServerTime(g.scheduled_backup.date, g)) + '</td></tr>';
+          backup += '<tr><td>Scheduled</td><td>' + esc(g.scheduled_backup.status) + ' — ' + esc(fmtServerTime(g.scheduled_backup.date, g)) + '</td></tr>';
         }
-        html += '</table></div>';
+        backup += '</table></div>';
       }
 
-      // ── Versions ──
-      html += '<div class="detail-card" style="grid-column:span 2"><h3>Versions</h3><table class="detail-table">' +
+      // ── Versions / System (column 4) ──
+      versions = '<div class="detail-card"><h3>Versions</h3><table class="detail-table">' +
         '<tr><td>GCM</td><td>v' + esc(g.gcm_version) + ' (' + esc(g.gcm_branch) + ')</td></tr>' +
         '<tr><td>WordPress</td><td>v' + esc(g.wp_version) + '</td></tr>' +
         '<tr><td>PHP</td><td>v' + esc(g.php_version) + '</td></tr>' +
         (g.wordpress_updates ? '<tr><td>Updates</td><td>core:' + g.wordpress_updates.core + ' plugins:' + g.wordpress_updates.plugins + ' themes:' + g.wordpress_updates.themes + '</td></tr>' : '') +
         '</table></div>';
-
-      // ── System ──
-      html += '<div class="detail-card" style="grid-column:span 2"><h3>System</h3><table class="detail-table">' +
+      system = '<div class="detail-card"><h3>System</h3><table class="detail-table">' +
         '<tr><td>Uptime</td><td>' + formatUptime(g.uptime_seconds) + '</td></tr>' +
         '<tr><td>HTTP Latency</td><td>' + esc(site.responseTime) + '</td></tr>' +
         '<tr><td>API Response</td><td>' + esc(site.apiResponse || "—") + ' (3 endpoints)</td></tr>' +
@@ -470,17 +472,15 @@ document.addEventListener("DOMContentLoaded", () => {
         (g.swap ? '<tr><td>Swap</td><td>' + esc(g.swap.used) + ' / ' + esc(g.swap.total) + '</td></tr>' : '') +
         '</table></div>';
 
-      // ── Services ──
-      html += '<div class="detail-card" style="grid-column:span 2"><h3>Services</h3><table class="detail-table">' +
+      // ── Services / Timers (column 5) ──
+      services = '<div class="detail-card"><h3>Services</h3><table class="detail-table">' +
         '<tr><td>Apache</td><td>' + (g.apache && g.apache.running ? "✓ Running v" + esc(g.apache.version || "") : "✗ Down") + '</td></tr>' +
         '<tr><td>Database</td><td>' + (g.database && g.database.running ? "✓ " + esc(g.database.type || "MariaDB") + " v" + esc(g.database.version || "") : "✗ Down") + '</td></tr>' +
         '<tr><td>WordPress</td><td>' + (g.wordpress && g.wordpress.running ? "✓ Running" : "✗ Down") + '</td></tr>' +
         (g.ssl ? '<tr><td>SSL</td><td>' + g.ssl.cert_days_left + ' days left</td></tr>' : '') +
         '</table></div>';
-
-      // ── Timers ──
       if (g.backup_timer || g.pending_timer || g.wp_cron || g.upgrade_timer) {
-        html += '<div class="detail-card" style="grid-column:span 2"><h3>Timers</h3><table class="detail-table">' +
+        timers = '<div class="detail-card"><h3>Timers</h3><table class="detail-table">' +
           (g.backup_timer ? '<tr><td>Backup</td><td>' + (g.backup_timer.active ? "✓" : "✗") + (g.backup_timer.next_run ? ' ' + esc(fmtServerTime(g.backup_timer.next_run, g)) : '') + '</td></tr>' : '') +
           (g.upgrade_timer ? '<tr><td>Upgrade</td><td>' + (g.upgrade_timer.active ? "✓" : "✗") + (g.upgrade_timer.next_run ? ' ' + esc(fmtServerTime(g.upgrade_timer.next_run, g)) : '') + '</td></tr>' : '') +
           (g.pending_timer ? '<tr><td>Deferred</td><td>' + (g.pending_timer.active ? "✓" : "✗") + (g.pending_timer.next_check ? ' ' + esc(fmtServerTime(g.pending_timer.next_check, g)) : '') + '</td></tr>' : '') +
@@ -488,11 +488,11 @@ document.addEventListener("DOMContentLoaded", () => {
           '</table></div>';
       }
 
-      // ── OS Update (self-overwriting metadata from the upgrade run) ──
+      // ── OS Update / Security (column 6) ──
       if (g.os_update) {
         const ou = g.os_update;
         const ouOk = ou.result === "ok";
-        html += '<div class="detail-card" style="grid-column:span 2"><h3>OS Update</h3><table class="detail-table">' +
+        osupd = '<div class="detail-card"><h3>OS Update</h3><table class="detail-table">' +
           '<tr><td>Last Run</td><td>' + esc(new Date((ou.ts || 0) * 1000).toLocaleString()) + '</td></tr>' +
           '<tr><td>Result</td><td style="color:' + (ouOk ? "var(--green,#22c55e)" : "var(--red,#ef4444)") + '">' + esc(ou.result || "—") + '</td></tr>' +
           '<tr><td>Packages Upgraded</td><td>' + (ou.packages_upgraded != null ? ou.packages_upgraded : "—") + '</td></tr>' +
@@ -500,10 +500,8 @@ document.addEventListener("DOMContentLoaded", () => {
           (ou.error ? '<tr><td>Error</td><td style="color:var(--red,#ef4444)">' + esc(ou.error) + '</td></tr>' : '') +
           '</table></div>';
       }
-
-      // ── Security ──
       if (g.ufw || g.fail2ban || g.modsecurity || g.maldet || g.site_integrity) {
-        html += '<div class="detail-card" style="grid-column:span 2"><h3>Security</h3><table class="detail-table">' +
+        security = '<div class="detail-card"><h3>Security</h3><table class="detail-table">' +
           (g.ufw ? '<tr><td>UFW</td><td>' + (g.ufw.active ? "✓ Active" : "✗ Inactive") + ' (' + g.ufw.rules + ' rules)</td></tr>' : '') +
           (g.fail2ban ? '<tr><td>fail2ban</td><td>' + esc(Object.entries(g.fail2ban).map(([k,v]) => k + ":" + v).join(" ")) + '</td></tr>' : '') +
           (g.modsecurity ? '<tr><td>ModSec</td><td>' + (g.modsecurity.installed ? "✓ " + esc(g.modsecurity.engine) + " (" + g.modsecurity.rules + " rules, " + (g.modsecurity.recent_blocks||0) + " blocks)" : "✗ Not installed") + '</td></tr>' : '') +
@@ -516,20 +514,11 @@ document.addEventListener("DOMContentLoaded", () => {
           (g.security_scan ? '<tr><td>Scan</td><td>' + (g.security_scan.ok ? "✓ Clean" : "⚠ Findings") + ' (' + (g.security_scan.findings||0) + ' findings)</td></tr>' : '') +
           '</table></div>';
       }
-
-      // ── Status Lapses ──
-      if (g.status_lapses && g.status_lapses.length > 0) {
-        html += '<div class="detail-card" style="grid-column:span 3"><h3>Status Lapses</h3>' +
-          '<div style="margin-bottom:4px">' + barChart(g.status_lapses) + '</div>' +
-          '<div style="font-size:10px;color:#64748b">' + lapseStats(g.status_lapses) + '</div>' +
-          '</div>';
-      }
-
     } else {
-      html += '<div class="detail-card"><h3>GCM</h3><p style="color:#64748b;font-size:11px">No data — endpoint unreachable or unauthorized.</p></div>';
+      fallback = '<div class="detail-card"><h3>GCM</h3><p style="color:#64748b;font-size:11px">No data — endpoint unreachable or unauthorized.</p></div>';
     }
 
-    // MetaManager + MXRoute: one combined tile (plugin layer + mail layer)
+    // ── MetaManager + MXRoute: one combined tile (column 2) ──
     let mmSection = "";
     if (site.mm && !site.mm._error && (site.mm.plugin_version || site.mm.daemons)) {
       const m = site.mm;
@@ -567,10 +556,17 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       mxSection = '<h4 class="subhead">MXRoute Mailer</h4><p style="color:#64748b;font-size:11px">Not installed or endpoint unavailable on this site.</p>';
     }
-    html += '<div class="detail-card" style="grid-column:span 2"><h3>MetaManager &amp; Mail</h3>' +
+    mmMx = '<div class="detail-card"><h3>MetaManager &amp; Mail</h3>' +
       mmSection + '<div class="subsep"></div>' + mxSection + '</div>';
 
-    return html;
+    // ── Assemble: 6 columns — three tall tiles, then pairs stacked two
+    // per column to match their height. ──
+    const col = (...tiles) => '<div class="detail-col">' + tiles.join("") + '</div>';
+    return '<div class="detail-cols">' +
+      col(gfx) + col(mmMx) + col(backup) +
+      col(versions, system) + col(services, timers) + col(osupd, security) +
+      (fallback ? col(fallback) : '') +
+      '</div>';
   }
 
   // ── Lightbox ──
