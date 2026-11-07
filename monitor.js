@@ -327,13 +327,13 @@ document.addEventListener("DOMContentLoaded", () => {
         services += '<span class="svc ' + (d.running ? "ok" : "down") + '">' + esc(name) + '</span>';
       });
     }
-    // GCM daemon-driven services (backup, cron, upgrade, pending, status, scan)
+    // GCM daemon-driven services (backup, cron, maint, pending, status, scan)
     if (site.gcm && !site.gcm._error) {
       const g = site.gcm;
       const daemonServices = [
         ["backup", g.backup_timer],
         ["cron", g.wp_cron],
-        ["upgrade", g.upgrade_timer],
+        ["maint", g.maintenance_timer],
         ["pending", g.pending_timer],
         ["status", g.gcm_status_timer || null],
         ["scan", g.security_scan ? { active: g.security_scan.ok } : null]
@@ -467,6 +467,15 @@ document.addEventListener("DOMContentLoaded", () => {
         '<tr><td>Uptime</td><td>' + formatUptime(g.uptime_seconds) + '</td></tr>' +
         '<tr><td>HTTP Latency</td><td>' + esc(site.responseTime) + '</td></tr>' +
         '<tr><td>API Response</td><td>' + esc(site.apiResponse || "—") + ' (3 endpoints)</td></tr>' +
+        (g.domain ? (() => {
+          const d = g.domain;
+          const vals = [d.config, d.wp_config, d.vhost].filter(Boolean);
+          const agree = vals.length > 0 && vals.every(v => v === vals[0]);
+          return '<tr><td>Domain</td><td>' + esc(d.config || "—") +
+            (agree ? "" : ' <span style="color:#f59e0b">⚠ sources disagree</span>') + '</td></tr>' +
+            '<tr><td>WP Config</td><td>' + esc(d.wp_config || "—") + '</td></tr>' +
+            '<tr><td>Vhost</td><td>' + esc(d.vhost || "—") + '</td></tr>';
+        })() : "") +
         (g.disk ? '<tr><td>VM Disk</td><td>' + esc(g.disk.used) + ' / ' + esc(g.disk.total) + ' (' + esc(g.disk.pct) + ')</td></tr>' : '') +
         (g.memory ? '<tr><td>Memory</td><td>' + esc(g.memory.used) + ' / ' + esc(g.memory.total) + '</td></tr>' : '') +
         (g.swap ? '<tr><td>Swap</td><td>' + esc(g.swap.used) + ' / ' + esc(g.swap.total) + '</td></tr>' : '') +
@@ -479,10 +488,10 @@ document.addEventListener("DOMContentLoaded", () => {
         '<tr><td>WordPress</td><td>' + (g.wordpress && g.wordpress.running ? "✓ Running" : "✗ Down") + '</td></tr>' +
         (g.ssl ? '<tr><td>SSL</td><td>' + g.ssl.cert_days_left + ' days left</td></tr>' : '') +
         '</table></div>';
-      if (g.backup_timer || g.pending_timer || g.wp_cron || g.upgrade_timer) {
+      if (g.backup_timer || g.pending_timer || g.wp_cron || g.maintenance_timer) {
         timers = '<div class="detail-card"><h3>Timers</h3><table class="detail-table">' +
           (g.backup_timer ? '<tr><td>Backup</td><td>' + (g.backup_timer.active ? "✓" : "✗") + (g.backup_timer.next_run ? ' ' + esc(fmtServerTime(g.backup_timer.next_run, g)) : '') + '</td></tr>' : '') +
-          (g.upgrade_timer ? '<tr><td>Upgrade</td><td>' + (g.upgrade_timer.active ? "✓" : "✗") + (g.upgrade_timer.next_run ? ' ' + esc(fmtServerTime(g.upgrade_timer.next_run, g)) : '') + '</td></tr>' : '') +
+          (g.maintenance_timer ? '<tr><td>Maintenance</td><td>' + (g.maintenance_timer.active ? "✓" : "✗") + (g.maintenance_timer.next_run ? ' ' + esc(fmtServerTime(g.maintenance_timer.next_run, g)) : '') + '</td></tr>' : '') +
           (g.pending_timer ? '<tr><td>Deferred</td><td>' + (g.pending_timer.active ? "✓" : "✗") + (g.pending_timer.next_check ? ' ' + esc(fmtServerTime(g.pending_timer.next_check, g)) : '') + '</td></tr>' : '') +
           (g.wp_cron ? '<tr><td>WP Cron</td><td>' + (g.wp_cron.active ? "✓" : "✗") + (g.wp_cron.next_run ? ' ' + esc(fmtServerTime(g.wp_cron.next_run, g)) : '') + '</td></tr>' : '') +
           '</table></div>';

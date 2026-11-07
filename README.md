@@ -26,7 +26,7 @@ Monitors all GCM-managed WordPress sites by fetching three REST endpoints per si
 - **Versions** — GCM, WordPress, PHP, updates
 - **System** — uptime, load, disk, memory
 - **Services** — Apache, database, WordPress, SSL
-- **Timers** — backup, upgrade, deferred, WP cron
+- **Timers** — backup, maintenance, deferred, WP cron
 - **Security** — UFW, fail2ban, ModSecurity, maldet, site integrity
 - **Status Lapses** — bar chart + text readout
 - **OS Update** — last run, result, packages upgraded, reboot action
