@@ -327,14 +327,13 @@ document.addEventListener("DOMContentLoaded", () => {
         services += '<span class="svc ' + (d.running ? "ok" : "down") + '">' + esc(name) + '</span>';
       });
     }
-    // GCM daemon-driven services (backup, cron, maint, pending, status, scan)
+    // GCM daemon-driven services (backup, cron, maint, status, scan)
     if (site.gcm && !site.gcm._error) {
       const g = site.gcm;
       const daemonServices = [
         ["backup", g.backup_timer],
         ["cron", g.wp_cron],
         ["maint", g.maintenance_timer],
-        ["pending", g.pending_timer],
         ["status", g.gcm_status_timer || null],
         ["scan", g.security_scan ? { active: g.security_scan.ok } : null]
       ];
@@ -488,11 +487,10 @@ document.addEventListener("DOMContentLoaded", () => {
         '<tr><td>WordPress</td><td>' + (g.wordpress && g.wordpress.running ? "✓ Running" : "✗ Down") + '</td></tr>' +
         (g.ssl ? '<tr><td>SSL</td><td>' + g.ssl.cert_days_left + ' days left</td></tr>' : '') +
         '</table></div>';
-      if (g.backup_timer || g.pending_timer || g.wp_cron || g.maintenance_timer) {
+      if (g.backup_timer || g.wp_cron || g.maintenance_timer) {
         timers = '<div class="detail-card"><h3>Timers</h3><table class="detail-table">' +
           (g.backup_timer ? '<tr><td>Backup</td><td>' + (g.backup_timer.active ? "✓" : "✗") + (g.backup_timer.next_run ? ' ' + esc(fmtServerTime(g.backup_timer.next_run, g)) : '') + '</td></tr>' : '') +
           (g.maintenance_timer ? '<tr><td>Maintenance</td><td>' + (g.maintenance_timer.active ? "✓" : "✗") + (g.maintenance_timer.next_run ? ' ' + esc(fmtServerTime(g.maintenance_timer.next_run, g)) : '') + '</td></tr>' : '') +
-          (g.pending_timer ? '<tr><td>Deferred</td><td>' + (g.pending_timer.active ? "✓" : "✗") + (g.pending_timer.next_check ? ' ' + esc(fmtServerTime(g.pending_timer.next_check, g)) : '') + '</td></tr>' : '') +
           (g.wp_cron ? '<tr><td>WP Cron</td><td>' + (g.wp_cron.active ? "✓" : "✗") + (g.wp_cron.next_run ? ' ' + esc(fmtServerTime(g.wp_cron.next_run, g)) : '') + '</td></tr>' : '') +
           '</table></div>';
       }
